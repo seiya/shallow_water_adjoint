@@ -15,6 +15,19 @@ contains
     alpha = alpha*pi/180.d0
   end subroutine read_alpha
 
+  subroutine read_snapshot_flag(flag)
+    logical, intent(out) :: flag
+    character(len=32) :: carg
+    integer :: inum
+    if (command_argument_count() >= 2) then
+       call get_command_argument(2,carg)
+       read(carg,*) inum
+       flag = (inum /= 0)
+    else
+       flag = .true.
+    end if
+  end subroutine read_snapshot_flag
+
   subroutine write_grid_params()
     open(unit=30,file='grid_params.txt',status='replace')
     write(30,*) nlon, nlat
