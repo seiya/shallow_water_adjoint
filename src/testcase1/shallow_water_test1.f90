@@ -149,23 +149,47 @@ contains
   subroutine rhs(h,dhdt,u,v,lat)
     real(dp), intent(in) :: h(nlon,nlat), u(nlon,nlat), v(nlon,nlat), lat(nlat)
     real(dp), intent(out) :: dhdt(nlon,nlat)
-    integer :: i,j,ip,im,jp,jm
+    ! Third-order upwind scheme for horizontal advection tendency
+    integer :: i,j
+    integer :: ip1,ip2,ip3,im1,im2,im3
+    integer :: jp1,jp2,jp3,jm1,jm2,jm3
     real(dp) :: hx, hy
+
     do j=1,nlat
-       jp = min(j+1,nlat)
-       jm = max(j-1,1)
+       jp1 = min(j+1,nlat)
+       jp2 = min(j+2,nlat)
+       jp3 = min(j+3,nlat)
+       jm1 = max(j-1,1)
+       jm2 = max(j-2,1)
+       jm3 = max(j-3,1)
        do i=1,nlon
-          ip = mod(i,nlon)+1
-          im = mod(i-2+nlon,nlon)+1
+          ip1 = mod(i,nlon)+1
+          ip2 = mod(i+1,nlon)+1
+          ip3 = mod(i+2,nlon)+1
+          im1 = mod(i-2+nlon,nlon)+1
+          im2 = mod(i-3+nlon,nlon)+1
+          im3 = mod(i-4+nlon,nlon)+1
           if (u(i,j) > 0.d0) then
-             hx = (h(i,j)-h(im,j))/(dlon*radius*cos(lat(j)))
+             hx = (11.d0*h(i,j) - 18.d0*h(im1,j) + 9.d0*h(im2,j) - 2.d0*h(im3,j)) &
+                  /(6.d0*dlon*radius*cos(lat(j)))
           else
-             hx = (h(ip,j)-h(i,j))/(dlon*radius*cos(lat(j)))
+             hx = (-11.d0*h(i,j) + 18.d0*h(ip1,j) - 9.d0*h(ip2,j) + 2.d0*h(ip3,j)) &
+                  /(6.d0*dlon*radius*cos(lat(j)))
           end if
           if (v(i,j) > 0.d0) then
-             hy = (h(i,j)-h(i,jm))/(dlat*radius)
+             if (j > 3) then
+                hy = (11.d0*h(i,j) - 18.d0*h(i,jm1) + 9.d0*h(i,jm2) - 2.d0*h(i,jm3)) &
+                     /(6.d0*dlat*radius)
+             else
+                hy = (h(i,j) - h(i,jm1))/(dlat*radius)
+             end if
           else
-             hy = (h(i,jp)-h(i,j))/(dlat*radius)
+             if (j < nlat-2) then
+                hy = (-11.d0*h(i,j) + 18.d0*h(i,jp1) - 9.d0*h(i,jp2) + 2.d0*h(i,jp3)) &
+                     /(6.d0*dlat*radius)
+             else
+                hy = (h(i,jp1) - h(i,j))/(dlat*radius)
+             end if
           end if
           dhdt(i,j) = -(u(i,j)*hx + v(i,j)*hy)
        end do
