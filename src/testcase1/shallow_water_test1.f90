@@ -16,7 +16,8 @@ program shallow_water_test1
   real(dp) :: lon(nlon), lat(nlat)
   real(dp) :: h(nlon,nlat), hn(nlon,nlat)
   real(dp) :: ha(nlon,nlat)
-  real(dp) :: u(nlon,nlat), v(nlon,nlat)
+  ! Arakawa C-grid staggering: u on zonal cell edges, v on meridional edges
+  real(dp) :: u(nlon+1,nlat), v(nlon,nlat+1)
   real(dp) :: t, maxerr, l1err, l2err, alpha, wtsum, err, w
   real(sp) :: hsp(nlon,nlat), usp(nlon,nlat), vsp(nlon,nlat)
   integer :: i,j,n
@@ -32,7 +33,7 @@ program shallow_water_test1
   alpha = alpha*pi/180.d0
 
   do i=1,nlon
-     lon(i) = (i-1)*dlon
+     lon(i) = (i-0.5d0)*dlon
   end do
   do j=1,nlat
      lat(j) = -pi/2.d0 + (j-0.5d0)*dlat
@@ -65,8 +66,9 @@ program shallow_water_test1
 
      if (mod(n,output_interval) == 0) then
         hsp = real(h,sp)
-        usp = real(u,sp)
-        vsp = real(v,sp)
+        ! Output cell-centered velocities averaged from C-grid edges
+        usp = real(0.5d0*(u(1:nlon,:) + u(2:nlon+1,:)), sp)
+        vsp = real(0.5d0*(v(:,1:nlat) + v(:,2:nlat+1)), sp)
         write(filename,'("snapshot_",i4.4,".bin")') n
         open(unit=20,file=filename,form='unformatted',access='stream',status='replace')
         write(20) hsp, usp, vsp
@@ -101,17 +103,27 @@ contains
   end subroutine init_height
 
   subroutine velocity_field(u,v,lon,lat,alpha)
-    real(dp), intent(out) :: u(nlon,nlat), v(nlon,nlat)
+    ! Compute velocity components on an Arakawa C-grid
+    real(dp), intent(out) :: u(nlon+1,nlat), v(nlon,nlat+1)
     real(dp), intent(in) :: lon(nlon), lat(nlat), alpha
-    real(dp) :: u0
+    real(dp) :: u0, lon_edge
     integer :: i,j
     u0 = omega*radius
+    ! Zonal velocity on longitudinal cell edges
     do j=1,nlat
+       do i=1,nlon+1
+          lon_edge = (i-1)*dlon
+          u(i,j) = u0*(cos(lat(j))*cos(alpha) + sin(lat(j))*cos(lon_edge)*sin(alpha))
+       end do
+    end do
+    ! Meridional velocity on latitudinal cell edges
+    do j=1,nlat+1
        do i=1,nlon
-          u(i,j) = u0*(cos(lat(j))*cos(alpha) + sin(lat(j))*cos(lon(i))*sin(alpha))
           v(i,j) = -u0*sin(lon(i))*sin(alpha)
        end do
     end do
+    v(:,1) = 0.d0
+    v(:,nlat+1) = 0.d0
   end subroutine velocity_field
 
   subroutine analytic_height(ha, lon, lat, t, alpha)
@@ -171,57 +183,49 @@ contains
   end subroutine rotate_point
 
   subroutine rhs(h,dhdt,u,v,lat)
-    real(dp), intent(in) :: h(nlon,nlat), u(nlon,nlat), v(nlon,nlat), lat(nlat)
+    real(dp), intent(in) :: h(nlon,nlat), u(nlon+1,nlat), v(nlon,nlat+1), lat(nlat)
     real(dp), intent(out) :: dhdt(nlon,nlat)
-    ! Third-order upwind scheme for horizontal advection tendency
-    integer :: i,j
-    integer :: ip1,ip2,ip3,im1,im2,im3
-    integer :: jp1,jp2,jp3,jm1,jm2,jm3
-    real(dp) :: hx, hy
+    ! First-order upwind fluxes on a C-grid
+    integer :: i,j,ip1,im1,jp1,jm1
+    real(dp) :: fe,fw,fn,fs,ue,uw,vn,vs
 
     do j=1,nlat
        jp1 = min(j+1,nlat)
-       jp2 = min(j+2,nlat)
-       jp3 = min(j+3,nlat)
        jm1 = max(j-1,1)
-       jm2 = max(j-2,1)
-       jm3 = max(j-3,1)
        do i=1,nlon
           ip1 = mod(i,nlon)+1
-          ip2 = mod(i+1,nlon)+1
-          ip3 = mod(i+2,nlon)+1
           im1 = mod(i-2+nlon,nlon)+1
-          im2 = mod(i-3+nlon,nlon)+1
-          im3 = mod(i-4+nlon,nlon)+1
-          if (u(i,j) > 0.d0) then
-             hx = (11.d0*h(i,j) - 18.d0*h(im1,j) + 9.d0*h(im2,j) - 2.d0*h(im3,j)) &
-                  /(6.d0*dlon*radius*cos(lat(j)))
+          ue = u(i+1,j)
+          uw = u(i,j)
+          if (ue > 0.d0) then
+             fe = ue*h(i,j)
           else
-             hx = (-11.d0*h(i,j) + 18.d0*h(ip1,j) - 9.d0*h(ip2,j) + 2.d0*h(ip3,j)) &
-                  /(6.d0*dlon*radius*cos(lat(j)))
+             fe = ue*h(ip1,j)
           end if
-          if (v(i,j) > 0.d0) then
-             if (j > 3) then
-                hy = (11.d0*h(i,j) - 18.d0*h(i,jm1) + 9.d0*h(i,jm2) - 2.d0*h(i,jm3)) &
-                     /(6.d0*dlat*radius)
-             else
-                hy = (h(i,j) - h(i,jm1))/(dlat*radius)
-             end if
+          if (uw > 0.d0) then
+             fw = uw*h(im1,j)
           else
-             if (j < nlat-2) then
-                hy = (-11.d0*h(i,j) + 18.d0*h(i,jp1) - 9.d0*h(i,jp2) + 2.d0*h(i,jp3)) &
-                     /(6.d0*dlat*radius)
-             else
-                hy = (h(i,jp1) - h(i,j))/(dlat*radius)
-             end if
+             fw = uw*h(i,j)
           end if
-          dhdt(i,j) = -(u(i,j)*hx + v(i,j)*hy)
+          vn = v(i,j+1)
+          vs = v(i,j)
+          if (vn > 0.d0) then
+             fn = vn*h(i,j)
+          else
+             fn = vn*h(i,jp1)
+          end if
+          if (vs > 0.d0) then
+             fs = vs*h(i,jm1)
+          else
+             fs = vs*h(i,j)
+          end if
+          dhdt(i,j) = -((fe - fw)/(dlon*radius*cos(lat(j))) + (fn - fs)/(dlat*radius))
        end do
     end do
   end subroutine rhs
 
   subroutine step(h,hn,u,v,lat)
-    real(dp), intent(in) :: h(nlon,nlat), u(nlon,nlat), v(nlon,nlat), lat(nlat)
+    real(dp), intent(in) :: h(nlon,nlat), u(nlon+1,nlat), v(nlon,nlat+1), lat(nlat)
     real(dp), intent(out) :: hn(nlon,nlat)
     real(dp) :: k1(nlon,nlat), k2(nlon,nlat)
     real(dp) :: k3(nlon,nlat), k4(nlon,nlat)
