@@ -8,8 +8,10 @@ program shallow_water_test1
   implicit none
   real(dp) :: t, maxerr, l1err, l2err, alpha, mse, mass_res
   integer :: n
+  logical :: snapshot_flag
   call init_variables()
   call read_alpha(alpha)
+  call read_snapshot_flag(snapshot_flag)
   call write_grid_params()
   call init_height(h, lon, lat)
   mass_res = calc_mass_residual(h)
@@ -20,9 +22,9 @@ program shallow_water_test1
      call analytic_height(ha, lon, lat, t, alpha)
      call calc_error_norms(h, ha, lat, l1err, l2err, maxerr)
      call write_error(t, l1err, l2err, maxerr)
-     if (mod(n,output_interval) == 0) then
-        call write_snapshot(n)
-     end if
+    if (snapshot_flag .and. mod(n,output_interval) == 0) then
+       call write_snapshot(n)
+    end if
      if (n == nsteps) exit
      call rk4_step(h, hn, u, v, lat)
      h = hn
