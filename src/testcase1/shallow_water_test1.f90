@@ -15,7 +15,7 @@ program shallow_water_test1
   real(dp) :: h(nlon,nlat), hn(nlon,nlat)
   real(dp) :: ha(nlon,nlat)
   real(dp) :: u(nlon,nlat), v(nlon,nlat)
-  real(dp) :: t, maxerr, alpha
+  real(dp) :: t, maxerr, l1err, l2err, alpha, wtsum, err, w
   integer :: i,j,n
   character(len=32) :: carg
 
@@ -38,17 +38,27 @@ program shallow_water_test1
   call init_height(h, lon, lat)
   call velocity_field(u, v, lon, lat, alpha)
 
-  open(unit=10,file='error.dat',status='replace')
+  open(unit=10,file='error.dat',status='replace')  ! t(days), L1, L2, Linf
   do n=0,nsteps
      t = n*dt
      call analytic_height(ha, lon, lat, t, alpha)
      maxerr = 0.d0
+     l1err = 0.d0
+     l2err = 0.d0
+     wtsum = 0.d0
      do j=1,nlat
+        w = cos(lat(j))
+        wtsum = wtsum + w
         do i=1,nlon
-           maxerr = max(maxerr, abs(h(i,j)-ha(i,j)))
+           err = h(i,j) - ha(i,j)
+           maxerr = max(maxerr, abs(err))
+           l1err = l1err + abs(err)*w
+           l2err = l2err + err*err*w
         end do
      end do
-     write(10,'(f10.4,1x,e14.6)') t/day, maxerr
+     l1err = l1err/(nlon*wtsum)
+     l2err = sqrt(l2err/(nlon*wtsum))
+     write(10,'(f10.4,3(1x,e14.6))') t/day, l1err, l2err, maxerr
      if (n == nsteps) exit
      call step(h, hn, u, v, lat)
      h = hn
