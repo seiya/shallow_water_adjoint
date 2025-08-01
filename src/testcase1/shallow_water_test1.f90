@@ -3,7 +3,7 @@ program shallow_water_test1
   ! Shallow water equation solver for cosine bell advection test case
   integer, parameter :: dp=kind(1.0d0)
   integer, parameter :: sp=kind(1.0)
-  integer, parameter :: nlon=64, nlat=32
+  integer, parameter :: nlon=128, nlat=64
   real(dp), parameter :: pi=3.14159265358979323846d0
   real(dp), parameter :: radius=6371220.d0, g=9.80616d0
   real(dp), parameter :: day=86400.d0
@@ -12,7 +12,7 @@ program shallow_water_test1
   real(dp), parameter :: omega=2.d0*pi/(12.d0*day)
   real(dp), parameter :: dt=600.d0
   integer, parameter :: nsteps=nint(12.d0*day/dt)
-  integer, parameter :: output_interval=24
+  integer, parameter :: output_interval=48
   real(dp) :: lon(nlon), lat(nlat)
   real(dp) :: h(nlon,nlat), hn(nlon,nlat)
   real(dp) :: ha(nlon,nlat)
@@ -31,6 +31,11 @@ program shallow_water_test1
      alpha = 0.d0
   end if
   alpha = alpha*pi/180.d0
+
+  ! Write grid dimensions for use by plotting script
+  open(unit=30,file='grid_params.txt',status='replace')
+  write(30,*) nlon, nlat
+  close(30)
 
   do i=1,nlon
      lon(i) = (i-0.5d0)*dlon
