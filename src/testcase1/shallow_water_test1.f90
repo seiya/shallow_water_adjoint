@@ -2,6 +2,7 @@ program shallow_water_test1
   implicit none
   ! Shallow water equation solver for cosine bell advection test case
   integer, parameter :: dp=kind(1.0d0)
+  integer, parameter :: sp=kind(1.0)
   integer, parameter :: nlon=64, nlat=32
   real(dp), parameter :: pi=3.14159265358979323846d0
   real(dp), parameter :: radius=6371220.d0, g=9.80616d0
@@ -11,13 +12,15 @@ program shallow_water_test1
   real(dp), parameter :: omega=2.d0*pi/(12.d0*day)
   real(dp), parameter :: dt=600.d0
   integer, parameter :: nsteps=nint(12.d0*day/dt)
+  integer, parameter :: output_interval=24
   real(dp) :: lon(nlon), lat(nlat)
   real(dp) :: h(nlon,nlat), hn(nlon,nlat)
   real(dp) :: ha(nlon,nlat)
   real(dp) :: u(nlon,nlat), v(nlon,nlat)
   real(dp) :: t, maxerr, l1err, l2err, alpha, wtsum, err, w
+  real(sp) :: hsp(nlon,nlat), usp(nlon,nlat), vsp(nlon,nlat)
   integer :: i,j,n
-  character(len=32) :: carg
+  character(len=32) :: carg, filename
 
   ! Read solid body rotation angle alpha in degrees from command line
   if (command_argument_count() >= 1) then
@@ -59,6 +62,17 @@ program shallow_water_test1
      l1err = l1err/(nlon*wtsum)
      l2err = sqrt(l2err/(nlon*wtsum))
      write(10,'(f10.4,3(1x,e14.6))') t/day, l1err, l2err, maxerr
+
+     if (mod(n,output_interval) == 0) then
+        hsp = real(h,sp)
+        usp = real(u,sp)
+        vsp = real(v,sp)
+        write(filename,'("snapshot_",i4.4,".bin")') n
+        open(unit=20,file=filename,form='unformatted',access='stream',status='replace')
+        write(20) hsp, usp, vsp
+        close(20)
+     end if
+
      if (n == nsteps) exit
      call step(h, hn, u, v, lat)
      h = hn
