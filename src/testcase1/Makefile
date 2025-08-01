@@ -7,6 +7,6 @@ shallow_water_test1: shallow_water_test1.f90
 	$(FC) $(FFLAGS) -o $@ $<
 
 clean:
-	rm -f shallow_water_test1 error.dat
+	rm -f shallow_water_test1 error.dat snapshot_*.bin snapshot_*.png
 
 .PHONY: all clean
