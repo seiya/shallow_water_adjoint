@@ -1,8 +1,7 @@
 program shallow_water_test1
+  use cost_module, only: calc_mse, calc_mass_residual, dp, sp
   implicit none
   ! Shallow water equation solver for cosine bell advection test case
-  integer, parameter :: dp=kind(1.0d0)
-  integer, parameter :: sp=kind(1.0)
   integer, parameter :: nlon=128, nlat=64
   real(dp), parameter :: pi=3.14159265358979323846d0
   real(dp), parameter :: radius=6371220.d0, g=9.80616d0
@@ -18,7 +17,7 @@ program shallow_water_test1
   real(dp) :: ha(nlon,nlat)
   ! Arakawa C-grid staggering: u on zonal cell edges, v on meridional edges
   real(dp) :: u(nlon+1,nlat), v(nlon,nlat+1)
-  real(dp) :: t, maxerr, l1err, l2err, alpha, wtsum, err, w
+  real(dp) :: t, maxerr, l1err, l2err, alpha, wtsum, err, w, mse, mass_res
   real(sp) :: hsp(nlon,nlat), usp(nlon,nlat), vsp(nlon,nlat)
   integer :: i,j,n
   character(len=32) :: carg, filename
@@ -45,6 +44,8 @@ program shallow_water_test1
   end do
 
   call init_height(h, lon, lat)
+  ! initialize reference mass for conservation check
+  mass_res = calc_mass_residual(h)
   call velocity_field(u, v, lon, lat, alpha)
 
   open(unit=10,file='error.dat',status='replace')  ! t(days), L1, L2, Linf
@@ -85,6 +86,14 @@ program shallow_water_test1
      h = hn
   end do
   close(10)
+
+  ! Compute cost function diagnostics at final time
+  open(unit=40,file='cost.log',status='replace')
+  mse = calc_mse(h, ha)
+  mass_res = calc_mass_residual(h)
+  write(40,'(a,1x,e16.8)') 'MSE', mse
+  write(40,'(a,1x,e16.8)') 'MassResidual', mass_res
+  close(40)
 
 contains
 
