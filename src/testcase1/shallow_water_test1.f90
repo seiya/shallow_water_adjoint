@@ -129,7 +129,7 @@ contains
     x = cos(lat)*cos(lon)
     y = cos(lat)*sin(lon)
     z = sin(lat)
-    n1 = sin(alpha)
+    n1 = -sin(alpha)
     n2 = 0.d0
     n3 = cos(alpha)
     ct = cos(theta)
