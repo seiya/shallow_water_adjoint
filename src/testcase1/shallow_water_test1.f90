@@ -146,9 +146,9 @@ contains
     latp = asin(zp)
   end subroutine rotate_point
 
-  subroutine step(h,hn,u,v,lat)
+  subroutine rhs(h,dhdt,u,v,lat)
     real(dp), intent(in) :: h(nlon,nlat), u(nlon,nlat), v(nlon,nlat), lat(nlat)
-    real(dp), intent(out) :: hn(nlon,nlat)
+    real(dp), intent(out) :: dhdt(nlon,nlat)
     integer :: i,j,ip,im,jp,jm
     real(dp) :: hx, hy
     do j=1,nlat
@@ -157,8 +157,6 @@ contains
        do i=1,nlon
           ip = mod(i,nlon)+1
           im = mod(i-2+nlon,nlon)+1
-          hx = 0.d0
-          hy = 0.d0
           if (u(i,j) > 0.d0) then
              hx = (h(i,j)-h(im,j))/(dlon*radius*cos(lat(j)))
           else
@@ -169,9 +167,26 @@ contains
           else
              hy = (h(i,jp)-h(i,j))/(dlat*radius)
           end if
-          hn(i,j) = h(i,j) - dt*(u(i,j)*hx + v(i,j)*hy)
+          dhdt(i,j) = -(u(i,j)*hx + v(i,j)*hy)
        end do
     end do
+  end subroutine rhs
+
+  subroutine step(h,hn,u,v,lat)
+    real(dp), intent(in) :: h(nlon,nlat), u(nlon,nlat), v(nlon,nlat), lat(nlat)
+    real(dp), intent(out) :: hn(nlon,nlat)
+    real(dp) :: k1(nlon,nlat), k2(nlon,nlat)
+    real(dp) :: k3(nlon,nlat), k4(nlon,nlat)
+    real(dp) :: htmp(nlon,nlat)
+
+    call rhs(h, k1, u, v, lat)
+    htmp = h + 0.5d0*dt*k1
+    call rhs(htmp, k2, u, v, lat)
+    htmp = h + 0.5d0*dt*k2
+    call rhs(htmp, k3, u, v, lat)
+    htmp = h + dt*k3
+    call rhs(htmp, k4, u, v, lat)
+    hn = h + dt*(k1 + 2.d0*k2 + 2.d0*k3 + k4)/6.d0
   end subroutine step
 
 end program shallow_water_test1
