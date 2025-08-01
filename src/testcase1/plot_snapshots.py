@@ -3,9 +3,17 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 
-# Grid parameters must match the Fortran code
-nlon = 64
-nlat = 32
+
+def read_grid_params(fname="grid_params.txt"):
+    """Return grid dimensions (nlon, nlat) read from a text file."""
+    with open(fname) as f:
+        parts = f.read().split()
+    if len(parts) < 2:
+        raise ValueError(f"{fname} must contain at least two integers")
+    return int(parts[0]), int(parts[1])
+
+
+nlon, nlat = read_grid_params()
 dt = 600.0
 
 # Construct longitude/latitude arrays in degrees
