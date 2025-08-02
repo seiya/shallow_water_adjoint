@@ -4,7 +4,7 @@ set -euo pipefail
 # Copy required Fortran modules from the installed fautodiff package
 # into the current working directory (build directory).
 
-src_dir=$(python - <<'PY'
+src_dir=$(python3 - <<'PY'
 import fautodiff
 from pathlib import Path
 print((Path(fautodiff.__file__).resolve().parent.parent / 'fortran_modules'))
