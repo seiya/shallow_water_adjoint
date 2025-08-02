@@ -27,8 +27,8 @@ shallow_water_reverse: ad ../src/testcase1/shallow_water_reverse.f90
 
 ad: ensure_fautodiff
 >../scripts/copy_fautodiff_modules.sh
->fautodiff ../src/common/constants_module.f90 -M . -o constants_module_ad.f90
->fautodiff ../src/cost_functions/cost_module.f90 -M . -I . -o cost_module_ad.f90
+>../scripts/fautodiff/bin/fautodiff ../src/common/constants_module.f90 -M . -o constants_module_ad.f90
+>../scripts/fautodiff/bin/fautodiff ../src/cost_functions/cost_module.f90 -M . -I . -o cost_module_ad.f90
 
 ensure_fautodiff:
 >../scripts/setup_fautodiff.sh

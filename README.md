@@ -24,4 +24,4 @@ This produces three binaries under `build`:
 - `shallow_water_forward` – forward mode example
 - `shallow_water_reverse` – reverse mode example
 
-Use `scripts/setup_fautodiff.sh` to ensure `fautodiff` is installed before building.
+Use `scripts/setup_fautodiff.sh` to clone `fautodiff` before building.
