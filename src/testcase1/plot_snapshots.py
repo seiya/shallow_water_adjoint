@@ -24,7 +24,10 @@ lon = np.arange(nlon) * dlon
 lat = -pi / 2.0 + (np.arange(nlat) + 0.5) * dlat
 lon_deg = np.degrees(lon)
 lat_deg = np.degrees(lat)
-lon2, lat2 = np.meshgrid(lon_deg, lat_deg, indexing='ij')
+# Use default 'xy' indexing so that the first dimension corresponds to
+# latitude and the second to longitude, matching the transposed data
+# arrays passed to ``quiver``.
+lon2, lat2 = np.meshgrid(lon_deg, lat_deg)
 
 npts = nlon * nlat
 for fname in sorted(glob.glob('snapshot_*.bin')):
