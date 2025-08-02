@@ -6,3 +6,4 @@ src/testcase1/cost.log
 src/testcase1/*.mod
 src/testcase1/run.log
 src/testcase1/grid_params.txt
+scripts/fautodiff

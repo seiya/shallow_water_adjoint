@@ -1,20 +1,11 @@
 #!/usr/bin/env bash
 set -e
-if ! command -v fautodiff >/dev/null 2>&1; then
-  echo "Installing fautodiff..."
-  # Install fautodiff into the global Python environment so that the
-  # module and corresponding ``fautodiff`` executable are importable from
-  # subsequent scripts.  ``--break-system-packages`` is required on some
-  # systems (e.g. Debian/Ubuntu with PEP 668) to allow installation into
-  # the system site-packages when not using a virtual environment.
-  python3 -m pip install --break-system-packages \
-    git+https://github.com/seiya/fautodiff >/tmp/fautodiff_install.log
-  tail -n 20 /tmp/fautodiff_install.log
-  # When using pyenv, newly installed executables are only available via
-  # shims after ``pyenv rehash``.  Do this silently if pyenv exists.
-  if command -v pyenv >/dev/null 2>&1; then
-    pyenv rehash >/dev/null 2>&1 || true
-  fi
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+FAUTODIFF_DIR="$SCRIPT_DIR/fautodiff"
+if [ ! -d "$FAUTODIFF_DIR" ]; then
+  echo "Cloning fautodiff..."
+  git clone --depth 1 https://github.com/seiya/fautodiff "$FAUTODIFF_DIR" >/tmp/fautodiff_clone.log
+  tail -n 20 /tmp/fautodiff_clone.log
 else
-  echo "fautodiff already installed."
+  echo "fautodiff already cloned."
 fi
