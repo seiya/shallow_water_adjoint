@@ -26,7 +26,7 @@ shallow_water_reverse: ad ../src/testcase1/shallow_water_reverse.f90
 >$(FC) $(FFLAGS) -I. fautodiff_stack.o constants_module.o cost_module.o constants_module_ad.o cost_module_ad.o ../src/testcase1/shallow_water_reverse.f90 -o $@
 
 ad: ensure_fautodiff
->python3 -m fortran_modules.gen_fautodiff_stack > fautodiff_stack.f90
+>../scripts/copy_fautodiff_modules.sh
 >fautodiff ../src/common/constants_module.f90 -M . -o constants_module_ad.f90
 >fautodiff ../src/cost_functions/cost_module.f90 -M . -I . -o cost_module_ad.f90
 
