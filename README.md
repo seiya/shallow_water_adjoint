@@ -10,11 +10,10 @@ arguments:
 
 ## Building and running
 
-Generate automatic differentiation modules and build executables:
+Build executables (required fautodiff modules are fetched automatically):
 
 ```bash
 cd build
-make ad
 make
 ```
 
@@ -24,4 +23,4 @@ This produces three binaries under `build`:
 - `shallow_water_forward` – forward mode example
 - `shallow_water_reverse` – reverse mode example
 
-Use `scripts/setup_fautodiff.sh` to clone `fautodiff` before building.
+The build step will clone and copy `fautodiff` modules on demand.
