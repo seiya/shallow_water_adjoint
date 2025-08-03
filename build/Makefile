@@ -1,4 +1,4 @@
-.PHONY: all ad clean ensure_fautodiff
+.PHONY: all ad clean
 .RECIPEPREFIX := >
 
 FC = gfortran
@@ -15,6 +15,7 @@ COMMON_OBJS = constants_module.o \
 COMMON_AD_OBJS = $(patsubst %.o,%_ad.o,$(COMMON_OBJS))
 
 FAUTODIFF_OBJS = fautodiff_stack.o
+FAUTODIFF_SRC  = fautodiff_stack.f90
 
 VPATH = ../src/common
 
@@ -29,17 +30,20 @@ shallow_water_test1_forward.out: ../src/testcase1/shallow_water_test1_forward.f9
 shallow_water_test1_reverse.out: ../src/testcase1/shallow_water_test1_reverse.f90 $(COMMON_OBJS) $(COMMON_AD_OBJS) $(FAUTODIFF_OBJS)
 >$(FC) $(FFLAGS) -I. -o $@ $^
 
+%_ad.o: %_ad.f90 $(FAUTODIFF_OBJS)
+>$(FC) $(FFLAGS) -c $< -o $@
+
 %.o: %.f90
 >$(FC) $(FFLAGS) -c $< -o $@
 
-%_ad.f90: %.f90 ad $(FAUTODIFF_OBJS)
+%_ad.f90: %.f90 $(FAUTODIFF_SRC)
 >../scripts/fautodiff/bin/fautodiff $< -I . -M . -o $@
 
-ad: ensure_fautodiff
->../scripts/copy_fautodiff_modules.sh
+ad: $(FAUTODIFF_SRC)
 
-ensure_fautodiff:
+$(FAUTODIFF_SRC):
 >../scripts/setup_fautodiff.sh
+>../scripts/copy_fautodiff_modules.sh
 
 clean:
 >rm -f *.o *.mod *.out *_ad.f90 *.fadmod fautodiff_stack.f90
