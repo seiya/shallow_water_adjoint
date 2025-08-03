@@ -5,6 +5,7 @@ module cost_module
 contains
 
   !> Compute sum of squared errors between numerical and analytic heights
+  !$FAD CONSTANT_VARS: height_ana
   function calc_mse(height_num, height_ana) result(mse)
     real(dp), intent(in) :: height_num(:,:), height_ana(:,:)
     real(dp) :: mse
@@ -25,6 +26,7 @@ contains
   end function calc_mass_residual
 
   !> Compute L1, L2, and Linf error norms
+  !$FAD CONSTANT_VARS: height_ana, lat
   subroutine calc_error_norms(height_num, height_ana, lat, l1err, l2err, maxerr)
     real(dp), intent(in) :: height_num(:,:), height_ana(:,:), lat(:)
     real(dp), intent(out) :: l1err, l2err, maxerr
@@ -54,6 +56,7 @@ contains
   end subroutine calc_error_norms
 
   !> Evaluate inner product of gradients with perturbation directions
+  !$FAD SKIP
   function evaluate_gradient(grad_ic, grad_param, dir_ic, dir_param) result(ip)
     real(dp), intent(in) :: grad_ic(:,:), grad_param(:)
     real(dp), intent(in) :: dir_ic(size(grad_ic,1),size(grad_ic,2))

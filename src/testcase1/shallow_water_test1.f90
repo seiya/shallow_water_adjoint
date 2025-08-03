@@ -6,9 +6,11 @@ program shallow_water_test1
   use rk4_module
   use io_module
   implicit none
+
   real(dp) :: t, maxerr, l1err, l2err, alpha, mse, mass_res
   integer :: n
   logical :: snapshot_flag
+
   call init_variables()
   call read_alpha(alpha)
   call read_snapshot_flag(snapshot_flag)
@@ -17,7 +19,7 @@ program shallow_water_test1
   mass_res = calc_mass_residual(h)
   call velocity_field(u, v, lon, lat, alpha)
   call open_error_file()
-  do n=0,nsteps
+  do n = 0, nsteps
      t = n*dt
      call analytic_height(ha, lon, lat, t, alpha)
      call calc_error_norms(h, ha, lat, l1err, l2err, maxerr)

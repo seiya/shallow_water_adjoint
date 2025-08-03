@@ -3,35 +3,45 @@
 
 FC = gfortran
 FFLAGS ?= -O2 -ffree-line-length-none
+FFLAGS += -ffpe-trap=invalid,zero,overflow -fbounds-check -finit-real=nan -g -fbacktrace
 
-all: shallow_water_test1 shallow_water_forward shallow_water_reverse
+COMMON_OBJS = constants_module.o \
+              variables_module.o \
+			  equations_module.o \
+			  rk4_module.o \
+			  io_module.o \
+			  cost_module.o
 
-shallow_water_test1:
->$(FC) $(FFLAGS) ../src/common/constants_module.f90 ../src/common/variables_module.f90 ../src/common/equations_module.f90 ../src/common/rk4_module.f90 ../src/common/io_module.f90 ../src/common/cost_functions.f90 ../src/testcase1/shallow_water_test1.f90 -o $@
+COMMON_AD_OBJS = $(patsubst %.o,%_ad.o,$(COMMON_OBJS))
 
-shallow_water_forward: ad ../src/testcase1/shallow_water_forward.f90
->$(FC) $(FFLAGS) -c fautodiff_stack.f90
->$(FC) $(FFLAGS) -c ../src/common/constants_module.f90
->$(FC) $(FFLAGS) -c ../src/common/cost_functions.f90
->$(FC) $(FFLAGS) -c constants_module_ad.f90
->$(FC) $(FFLAGS) -c cost_module_ad.f90
->$(FC) $(FFLAGS) -I. fautodiff_stack.o constants_module.o cost_functions.o constants_module_ad.o cost_module_ad.o ../src/testcase1/shallow_water_forward.f90 -o $@
+FAUTODIFF_OBJS = fautodiff_stack.o
 
-shallow_water_reverse: ad ../src/testcase1/shallow_water_reverse.f90
->$(FC) $(FFLAGS) -c fautodiff_stack.f90
->$(FC) $(FFLAGS) -c ../src/common/constants_module.f90
->$(FC) $(FFLAGS) -c ../src/common/cost_functions.f90
->$(FC) $(FFLAGS) -c constants_module_ad.f90
->$(FC) $(FFLAGS) -c cost_module_ad.f90
->$(FC) $(FFLAGS) -I. fautodiff_stack.o constants_module.o cost_functions.o constants_module_ad.o cost_module_ad.o ../src/testcase1/shallow_water_reverse.f90 -o $@
+VPATH = ../src/common
+
+all: shallow_water_test1.out shallow_water_test1_forward.out shallow_water_test1_reverse.out
+
+shallow_water_test1.out: ../src/testcase1/shallow_water_test1.f90 $(COMMON_OBJS)
+>$(FC) $(FFLAGS) -o $@ $^
+
+shallow_water_test1_forward.out: ../src/testcase1/shallow_water_test1_forward.f90 $(COMMON_OBJS) $(COMMON_AD_OBJS) $(FAUTODIFF_OBJS)
+>$(FC) $(FFLAGS) -I. -o $@ $^
+
+shallow_water_test1_reverse.out: ../src/testcase1/shallow_water_test1_reverse.f90 $(COMMON_OBJS) $(COMMON_AD_OBJS) $(FAUTODIFF_OBJS)
+>$(FC) $(FFLAGS) -I. -o $@ $^
+
+%.o: %.f90
+>$(FC) $(FFLAGS) -c $< -o $@
+
+%_ad.f90: %.f90 ad $(FAUTODIFF_OBJS)
+>../scripts/fautodiff/bin/fautodiff $< -I . -M . -o $@
 
 ad: ensure_fautodiff
 >../scripts/copy_fautodiff_modules.sh
->../scripts/fautodiff/bin/fautodiff ../src/common/constants_module.f90 -M . -o constants_module_ad.f90
->../scripts/fautodiff/bin/fautodiff ../src/common/cost_functions.f90 -M . -I . -o cost_module_ad.f90
 
 ensure_fautodiff:
 >../scripts/setup_fautodiff.sh
 
 clean:
->rm -f *.o *.mod shallow_water_test1 shallow_water_forward shallow_water_reverse *_ad.f90 *.fadmod fautodiff_stack.f90
+>rm -f *.o *.mod *.out *_ad.f90 *.fadmod fautodiff_stack.f90
+
+.PRECIOUS: %_ad.f90
