@@ -15,7 +15,13 @@ module variables_module
   real(dp), allocatable :: h(:,:), hn(:,:), ha(:,:)
   real(dp), allocatable :: u(:,:), v(:,:)
   real(sp), allocatable :: hsp(:,:), usp(:,:), vsp(:,:)
+
+  !$FAD CONSTANT_VARS: lon, lat
+  !$FAD CONSTANT_VARS: ha
+  !$FAD CONSTANT_VARS: hsp, usp, vsp
+
 contains
+
   subroutine init_variables()
     integer :: i, j
     allocate(lon(nlon), lat(nlat))
@@ -29,6 +35,7 @@ contains
        lat(j) = -pi/2.d0 + (j-0.5d0)*dlat
     end do
   end subroutine init_variables
+
   subroutine finalize_variables()
     if (allocated(lon)) deallocate(lon)
     if (allocated(lat)) deallocate(lat)
@@ -41,4 +48,5 @@ contains
     if (allocated(usp)) deallocate(usp)
     if (allocated(vsp)) deallocate(vsp)
   end subroutine finalize_variables
+
 end module variables_module

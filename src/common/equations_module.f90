@@ -2,7 +2,10 @@ module equations_module
   use constants_module, only: dp
   use variables_module, only: nlon, nlat, pi, radius, dlon, dlat, h0, h1, omega
   implicit none
+
 contains
+
+  !$FAD CONSTANT_VARS: lon, lat
   subroutine init_height(h, lon, lat)
     real(dp), intent(out) :: h(nlon,nlat)
     real(dp), intent(in) :: lon(nlon), lat(nlat)
@@ -22,6 +25,7 @@ contains
     end do
   end subroutine init_height
 
+  !$FAD CONSTANT_VARS: lon, lat, alpha
   subroutine velocity_field(u,v,lon,lat,alpha)
     real(dp), intent(out) :: u(nlon+1,nlat), v(nlon,nlat+1)
     real(dp), intent(in) :: lon(nlon), lat(nlat), alpha
@@ -43,6 +47,7 @@ contains
     v(:,nlat+1) = 0.d0
   end subroutine velocity_field
 
+  !$FAD CONSTANT_VARS: lon, lat, t, alpha
   subroutine analytic_height(ha, lon, lat, t, alpha)
     real(dp), intent(out) :: ha(nlon,nlat)
     real(dp), intent(in) :: lon(nlon), lat(nlat), t, alpha
@@ -57,6 +62,7 @@ contains
     end do
   end subroutine analytic_height
 
+  !$FAD CONSTANT_VARS: lon, lat
   function initial_at_point(lon,lat) result(hp)
     real(dp), intent(in) :: lon, lat
     real(dp) :: hp, lambda0, phi0, r0, dist
@@ -68,12 +74,14 @@ contains
     if (dist < r0) hp = h0 + 0.5d0*h1*(1.d0+cos(pi*dist/r0))
   end function initial_at_point
 
+  !$FAD SKIP
   subroutine gc_distance(lon1,lat1,lon2,lat2,dist)
     real(dp), intent(in) :: lon1,lat1,lon2,lat2
     real(dp), intent(out) :: dist
     dist = radius*acos( sin(lat1)*sin(lat2) + cos(lat1)*cos(lat2)*cos(lon1-lon2) )
   end subroutine gc_distance
 
+  !$FAD SKIP
   subroutine rotate_point(lon,lat,alpha,theta,lonp,latp)
     real(dp), intent(in) :: lon, lat, alpha, theta
     real(dp), intent(out) :: lonp, latp
@@ -99,6 +107,7 @@ contains
     latp = asin(zp)
   end subroutine rotate_point
 
+  !$FAD CONSTANT_VARS: lat
   subroutine rhs(h,dhdt,u,v,lat)
     real(dp), intent(in) :: h(nlon,nlat), u(nlon+1,nlat), v(nlon,nlat+1), lat(nlat)
     real(dp), intent(out) :: dhdt(nlon,nlat)
@@ -138,4 +147,5 @@ contains
        end do
     end do
   end subroutine rhs
+
 end module equations_module
