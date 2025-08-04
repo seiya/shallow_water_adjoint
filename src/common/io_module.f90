@@ -54,8 +54,10 @@ contains
   end subroutine close_error_file
 
   !$FAD SKIP
-  subroutine write_snapshot(n)
+  subroutine write_snapshot(n, h, u, v)
     integer, intent(in) :: n
+    real(dp), intent(in) :: h(nlon,nlat)
+    real(dp), intent(in) :: u(nlon+1,nlat), v(nlon,nlat+1)
     character(len=32) :: filename
     hsp = real(h,sp)
     usp = real(0.5d0*(u(1:nlon,:) + u(2:nlon+1,:)), sp)
