@@ -15,14 +15,29 @@ program shallow_water_test1_reverse
 
   real(dp) :: t, maxerr, l1err, l2err, alpha, mse, mass_res
   real(dp) :: maxerr_ad, l1err_ad, l2err_ad, mse_ad, mass_res_ad
+  real(dp) :: grad_dot_d
   integer :: n
   logical :: snapshot_flag
+  character(len=256) :: carg
+  real(dp), allocatable :: d(:,:)
 
   call init_variables()
   call read_alpha(alpha)
   call read_snapshot_flag(snapshot_flag)
   call write_grid_params()
-  call init_height(h, lon, lat)
+  if (command_argument_count() >= 3) then
+     call get_command_argument(3, carg)
+     call read_field(h, trim(carg))
+  else
+     call init_height(h, lon, lat)
+  end if
+  allocate(d(nlon,nlat))
+  if (command_argument_count() >= 4) then
+     call get_command_argument(4, carg)
+     call read_field(d, trim(carg))
+  else
+     d = 0.0_dp
+  end if
   mass_res = calc_mass_residual(h)
   call velocity_field(u, v, lon, lat, alpha)
   do n = 0, nsteps
@@ -31,6 +46,8 @@ program shallow_water_test1_reverse
      call rk4_step(h, hn, u, v, lat)
      h = hn
   end do
+  t = nsteps*dt
+  call analytic_height(ha, lon, lat, t, alpha)
   mse = calc_mse(h, ha)
   mass_res = calc_mass_residual(h)
 
@@ -52,12 +69,14 @@ program shallow_water_test1_reverse
      if (snapshot_flag .and. mod(n,output_interval) == 0) then
         call write_snapshot(n, h_ad, u, v)
      end if
-   end do
-   !call velocity_field_rev_ad(u, u_ad, v, v_ad, lon, lat, alpha)
-   !call init_height_rev_ad(h, h_ad, lon, lat)
-   print *, sum(h_ad), minval(h_ad), maxval(h_ad)
-   call init_variables_rev_ad()
+  end do
+  !call velocity_field_rev_ad(u, u_ad, v, v_ad, lon, lat, alpha)
+  !call init_height_rev_ad(h, h_ad, lon, lat)
+  grad_dot_d = sum(h_ad*d)
+  print *, sum(h_ad), minval(h_ad), maxval(h_ad)
+  print *, grad_dot_d
+  call init_variables_rev_ad()
 
-   call finalize_variables()
+  call finalize_variables()
 
 end program shallow_water_test1_reverse

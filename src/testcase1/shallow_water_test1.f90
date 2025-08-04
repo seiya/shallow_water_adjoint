@@ -10,12 +10,18 @@ program shallow_water_test1
   real(dp) :: t, maxerr, l1err, l2err, alpha, mse, mass_res
   integer :: n
   logical :: snapshot_flag
+  character(len=256) :: carg
 
   call init_variables()
   call read_alpha(alpha)
   call read_snapshot_flag(snapshot_flag)
   call write_grid_params()
-  call init_height(h, lon, lat)
+  if (command_argument_count() >= 3) then
+     call get_command_argument(3, carg)
+     call read_field(h, trim(carg))
+  else
+     call init_height(h, lon, lat)
+  end if
   mass_res = calc_mass_residual(h)
   call velocity_field(u, v, lon, lat, alpha)
   call open_error_file()

@@ -31,6 +31,16 @@ contains
   end subroutine read_snapshot_flag
 
   !$FAD SKIP
+  subroutine read_field(field, filename)
+    !! Read a two-dimensional field from a binary file.
+    real(dp), intent(out) :: field(nlon,nlat)
+    character(len=*), intent(in) :: filename
+    open(unit=50,file=filename,form='unformatted',access='stream',status='old')
+    read(50) field
+    close(50)
+  end subroutine read_field
+
+  !$FAD SKIP
   subroutine write_grid_params()
     open(unit=30,file='grid_params.txt',status='replace')
     write(30,*) nlon, nlat
@@ -72,8 +82,8 @@ contains
   subroutine write_cost_log(mse,mass_res)
     real(dp), intent(in) :: mse, mass_res
     open(unit=40,file='cost.log',status='replace')
-    write(40,'(a,1x,e16.8)') 'MSE', mse
-    write(40,'(a,1x,e16.8)') 'MassResidual', mass_res
+    write(40,'(a,1x,e25.16)') 'MSE', mse
+    write(40,'(a,1x,e25.16)') 'MassResidual', mass_res
     close(40)
   end subroutine write_cost_log
 end module io_module
