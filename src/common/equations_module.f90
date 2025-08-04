@@ -47,7 +47,7 @@ contains
     v(:,nlat+1) = 0.d0
   end subroutine velocity_field
 
-  !$FAD CONSTANT_VARS: lon, lat, t, alpha
+  !$FAD SKIP
   subroutine analytic_height(ha, lon, lat, t, alpha)
     real(dp), intent(out) :: ha(nlon,nlat)
     real(dp), intent(in) :: lon(nlon), lat(nlat), t, alpha

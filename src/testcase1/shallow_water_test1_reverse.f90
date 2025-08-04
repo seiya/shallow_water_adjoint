@@ -20,6 +20,8 @@ program shallow_water_test1_reverse
 
   call init_variables()
   call read_alpha(alpha)
+  call read_snapshot_flag(snapshot_flag)
+  call write_grid_params()
   call init_height(h, lon, lat)
   mass_res = calc_mass_residual(h)
   call velocity_field(u, v, lon, lat, alpha)
@@ -31,12 +33,13 @@ program shallow_water_test1_reverse
   end do
   mse = calc_mse(h, ha)
   mass_res = calc_mass_residual(h)
-  call finalize_variables()
-
-  mse_ad = 1.0_dp
-  mass_res = 1.0_dp
 
   call finalize_variables_rev_ad()
+
+  mse_ad = 1.0_dp
+  mass_res_ad = 0.0_dp
+  h_ad = 0.0_dp
+
   call calc_mass_residual_rev_ad(h, h_ad, mass_res_ad)
   call calc_mse_rev_ad(h, h_ad, ha, mse_ad)
   do n = nsteps, 0, -1
@@ -46,9 +49,15 @@ program shallow_water_test1_reverse
         h_ad = 0.0_dp
         call rk4_step_rev_ad(h, h_ad, hn_ad, u, u_ad, v, v_ad, lat)
      end if
+     if (snapshot_flag .and. mod(n,output_interval) == 0) then
+        call write_snapshot(n, h_ad, u, v)
+     end if
    end do
    !call velocity_field_rev_ad(u, u_ad, v, v_ad, lon, lat, alpha)
    !call init_height_rev_ad(h, h_ad, lon, lat)
+   print *, sum(h_ad), minval(h_ad), maxval(h_ad)
    call init_variables_rev_ad()
+
+   call finalize_variables()
 
 end program shallow_water_test1_reverse

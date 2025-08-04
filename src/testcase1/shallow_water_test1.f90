@@ -24,9 +24,9 @@ program shallow_water_test1
      call analytic_height(ha, lon, lat, t, alpha)
      call calc_error_norms(h, ha, lat, l1err, l2err, maxerr)
      call write_error(t, l1err, l2err, maxerr)
-    if (snapshot_flag .and. mod(n,output_interval) == 0) then
-       call write_snapshot(n)
-    end if
+     if (snapshot_flag .and. mod(n,output_interval) == 0) then
+        call write_snapshot(n, h, u, v)
+     end if
      if (n == nsteps) exit
      call rk4_step(h, hn, u, v, lat)
      h = hn
