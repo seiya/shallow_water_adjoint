@@ -1,6 +1,6 @@
 module equations_module
   use constants_module, only: dp
-  use variables_module, only: nlon, nlat, pi, radius, dlon, dlat, h0, h1, omega
+  use variables_module, only: nlon, nlat, pi, radius, dlon, dlat, h0, h1, omega, g
   implicit none
 
 contains
@@ -27,13 +27,13 @@ contains
 
   !$FAD CONSTANT_VARS: lon, lat, alpha
   subroutine velocity_field(u,v,lon,lat,alpha)
-    real(dp), intent(out) :: u(nlon+1,nlat), v(nlon,nlat+1)
+    real(dp), intent(out) :: u(nlon,nlat), v(nlon,nlat+1)
     real(dp), intent(in) :: lon(nlon), lat(nlat), alpha
     real(dp) :: u0, lon_edge
     integer :: i,j
     u0 = omega*radius
     do j=1,nlat
-       do i=1,nlon+1
+       do i=1,nlon
           lon_edge = (i-1)*dlon
           u(i,j) = u0*(cos(lat(j))*cos(alpha) + sin(lat(j))*cos(lon_edge)*sin(alpha))
        end do
@@ -108,18 +108,22 @@ contains
   end subroutine rotate_point
 
   !$FAD CONSTANT_VARS: lat
-  subroutine rhs(h,dhdt,u,v,lat)
-    real(dp), intent(in) :: h(nlon,nlat), u(nlon+1,nlat), v(nlon,nlat+1), lat(nlat)
+  subroutine rhs(h, u, v, dhdt, dudt, dvdt, lat)
+    real(dp), intent(in) :: h(nlon,nlat), u(nlon,nlat), v(nlon,nlat+1)
     real(dp), intent(out) :: dhdt(nlon,nlat)
+    real(dp), intent(out) :: dudt(nlon,nlat), dvdt(nlon,nlat+1)
+    real(dp), intent(in) :: lat(nlat)
     integer :: i,j,ip1,im1,jp1,jm1
     real(dp) :: fe,fw,fn,fs,ue,uw,vn,vs
+    real(dp) :: fcor, h_e, h_w, h_n, h_s, v_avg, u_avg
+    ! continuity equation
     do j=1,nlat
        jp1 = min(j+1,nlat)
        jm1 = max(j-1,1)
        do i=1,nlon
           ip1 = mod(i,nlon)+1
           im1 = mod(i-2+nlon,nlon)+1
-          ue = u(i+1,j)
+          ue = u(ip1,j)
           uw = u(i,j)
           if (ue > 0.d0) then
              fe = ue*h(i,j)
@@ -146,6 +150,34 @@ contains
           dhdt(i,j) = -((fe - fw)/(dlon*radius*cos(lat(j))) + (fn - fs)/(dlat*radius))
        end do
     end do
+
+    ! zonal momentum
+    do j=1,nlat
+       fcor = 2.d0*omega*sin(lat(j))
+       do i=1,nlon
+          im1 = mod(i-2+nlon,nlon)+1
+          h_e = h(i,j)
+          h_w = h(im1,j)
+          v_avg = 0.25d0*(v(im1,j) + v(im1,j+1) + v(i,j) + v(i,j+1))
+          dudt(i,j) = -g*(h_e - h_w)/(dlon*radius*cos(lat(j))) + fcor*v_avg
+       end do
+    end do
+
+    ! meridional momentum
+    do j=2,nlat
+       jm1 = j-1
+       fcor = 2.d0*omega*sin(-pi/2.d0 + (j-1)*dlat)
+       do i=1,nlon
+          ip1 = mod(i,nlon)+1
+          im1 = mod(i-2+nlon,nlon)+1
+          h_n = h(i,j)
+          h_s = h(i,jm1)
+          u_avg = 0.25d0*(u(i,jm1) + u(ip1,jm1) + u(i,j) + u(ip1,j))
+          dvdt(i,j) = -g*(h_n - h_s)/(dlat*radius) - fcor*u_avg
+       end do
+    end do
+    dvdt(:,1) = 0.d0
+    dvdt(:,nlat+1) = 0.d0
   end subroutine rhs
 
 end module equations_module

@@ -26,7 +26,7 @@ contains
     integer :: i, j
     allocate(lon(nlon), lat(nlat))
     allocate(h(nlon,nlat), hn(nlon,nlat), ha(nlon,nlat))
-    allocate(u(nlon+1,nlat), v(nlon,nlat+1))
+    allocate(u(nlon,nlat), v(nlon,nlat+1))
     allocate(hsp(nlon,nlat), usp(nlon,nlat), vsp(nlon,nlat))
     do i=1,nlon
        lon(i) = (i-0.5d0)*dlon

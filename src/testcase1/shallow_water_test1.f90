@@ -9,6 +9,7 @@ program shallow_water_test1
 
   real(dp) :: t, maxerr, l1err, l2err, alpha, mse, mass_res
   integer :: n
+  real(dp) :: un(nlon,nlat), vn(nlon,nlat+1)
   character(len=256) :: carg
 
   call init_variables()
@@ -37,8 +38,10 @@ program shallow_water_test1
         end if
      end if
      if (n == nsteps) exit
-     call rk4_step(h, hn, u, v, lat)
+     call rk4_step(h, u, v, hn, un, vn, lat)
      h = hn
+     u = un
+     v = vn
   end do
   call close_error_file()
   mse = calc_mse(h, ha)

@@ -24,8 +24,8 @@ def geostrophic_height(nlon, nlat):
     u0 = 20.0
     dlat = pi / nlat
     lat = -pi/2 + (np.arange(nlat) + 0.5) * dlat
-    coeff = (radius * u0 * omega / g) + (0.5 * u0 * u0 / g)
-    hlat = h0 - coeff * np.cos(lat) ** 2
+    coeff = radius * omega * u0 / g
+    hlat = h0 - coeff * np.sin(lat) ** 2
     return np.repeat(hlat[np.newaxis, :], nlon, axis=0)
 
 
