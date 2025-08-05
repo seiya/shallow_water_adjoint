@@ -107,12 +107,13 @@ contains
     latp = asin(zp)
   end subroutine rotate_point
 
-  !$FAD CONSTANT_VARS: lat
-  subroutine rhs(h, u, v, dhdt, dudt, dvdt, lat)
+  !$FAD CONSTANT_VARS: lat, no_momentum_tendency
+  subroutine rhs(h, u, v, dhdt, dudt, dvdt, lat, no_momentum_tendency)
     real(dp), intent(in) :: h(nlon,nlat), u(nlon,nlat), v(nlon,nlat+1)
     real(dp), intent(out) :: dhdt(nlon,nlat)
     real(dp), intent(out) :: dudt(nlon,nlat), dvdt(nlon,nlat+1)
     real(dp), intent(in) :: lat(nlat)
+    logical, intent(in), optional :: no_momentum_tendency
     integer :: i,j,ip1,im1,jp1,jm1
     real(dp) :: fe,fw,fn,fs,ue,uw,vn,vs
     real(dp) :: fcor, h_e, h_w, h_n, h_s, v_avg, u_avg
@@ -151,6 +152,14 @@ contains
        end do
     end do
 
+    if (present(no_momentum_tendency)) then
+       if (no_momentum_tendency) then
+          dudt = 0.d0
+          dvdt = 0.d0
+          return
+       end if
+    end if
+
     ! zonal momentum
     do j=1,nlat
        fcor = 2.d0*omega*sin(lat(j))
@@ -165,9 +174,9 @@ contains
 
     ! meridional momentum
     do j=2,nlat
-       jm1 = j-1
-       fcor = 2.d0*omega*sin(-pi/2.d0 + (j-1)*dlat)
-       do i=1,nlon
+        jm1 = j-1
+        fcor = 2.d0*omega*sin(-pi/2.d0 + (j-1)*dlat)
+        do i=1,nlon
           ip1 = mod(i,nlon)+1
           im1 = mod(i-2+nlon,nlon)+1
           h_n = h(i,j)
