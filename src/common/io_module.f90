@@ -17,18 +17,14 @@ contains
   end subroutine read_alpha
 
   !$FAD SKIP
-  subroutine read_snapshot_flag(flag)
-    logical, intent(out) :: flag
+  subroutine read_output_interval(interval)
+    integer, intent(inout) :: interval
     character(len=32) :: carg
-    integer :: inum
     if (command_argument_count() >= 2) then
        call get_command_argument(2,carg)
-       read(carg,*) inum
-       flag = (inum /= 0)
-    else
-       flag = .true.
+       read(carg,*) interval
     end if
-  end subroutine read_snapshot_flag
+  end subroutine read_output_interval
 
   !$FAD SKIP
   subroutine read_field(field, filename)

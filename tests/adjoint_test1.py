@@ -28,13 +28,13 @@ def main():
     save_field(u_file, u)
 
     res = subprocess.run(
-        [str(exe_fwd), '0', '0', str(x_file), str(u_file)],
+        [str(exe_fwd), '0', '-1', str(x_file), str(u_file)],
         check=True, cwd=build_dir, capture_output=True, text=True
     )
     Ju = float(res.stdout.strip().split()[0])
 
     subprocess.run(
-        [str(exe_rev), '0', '1', str(x_file)],
+        [str(exe_rev), '0', '0', str(x_file)],
         check=True, cwd=build_dir, capture_output=True, text=True
     )
     g = read_snapshot(build_dir / 'snapshot_0000.bin', nlon, nlat)

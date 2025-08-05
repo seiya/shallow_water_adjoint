@@ -17,13 +17,12 @@ program shallow_water_test1_reverse
   real(dp) :: maxerr_ad, l1err_ad, l2err_ad, mse_ad, mass_res_ad
   real(dp) :: grad_dot_d
   integer :: n
-  logical :: snapshot_flag
   character(len=256) :: carg
   real(dp), allocatable :: d(:,:)
 
   call init_variables()
   call read_alpha(alpha)
-  call read_snapshot_flag(snapshot_flag)
+  call read_output_interval(output_interval)
   call write_grid_params()
   if (command_argument_count() >= 3) then
      call get_command_argument(3, carg)
@@ -66,8 +65,12 @@ program shallow_water_test1_reverse
         h_ad = 0.0_dp
         call rk4_step_rev_ad(h, h_ad, hn_ad, u, u_ad, v, v_ad, lat)
      end if
-     if (snapshot_flag .and. mod(n,output_interval) == 0) then
-        call write_snapshot(n, h_ad, u, v)
+     if (output_interval /= -1) then
+        if (output_interval == 0) then
+           if (n == 0) call write_snapshot(n, h_ad, u, v)
+        else if (mod(n, output_interval) == 0) then
+           call write_snapshot(n, h_ad, u, v)
+        end if
      end if
   end do
   !call velocity_field_rev_ad(u, u_ad, v, v_ad, lon, lat, alpha)
