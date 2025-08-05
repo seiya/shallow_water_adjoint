@@ -13,12 +13,11 @@ program shallow_water_test1_forward
   real(dp) :: t, maxerr, l1err, l2err, alpha, mse, mass_res
   real(dp) :: t_ad, maxerr_ad, l1err_ad, l2err_ad, mse_ad, mass_res_ad
   integer :: n
-  logical :: snapshot_flag
   character(len=256) :: carg
 
   call init_variables()
   call read_alpha(alpha)
-  call read_snapshot_flag(snapshot_flag)
+  call read_output_interval(output_interval)
   call write_grid_params()
   call init_variables_fwd_ad()
   ha = 0.0_dp
@@ -39,8 +38,12 @@ program shallow_water_test1_forward
   call velocity_field_fwd_ad(u, u_ad, v, v_ad, lon, lat, alpha)
   do n = 0, nsteps
      t = n*dt
-     if (snapshot_flag .and. mod(n,output_interval) == 0) then
-        call write_snapshot(n, h_ad, u, v)
+     if (output_interval /= -1) then
+        if (output_interval == 0) then
+           if (n == nsteps) call write_snapshot(n, h_ad, u, v)
+        else if (mod(n, output_interval) == 0) then
+           call write_snapshot(n, h_ad, u, v)
+        end if
      end if
      if (n == nsteps) exit
      call rk4_step_fwd_ad(h, h_ad, hn, hn_ad, u, u_ad, v, v_ad, lat)

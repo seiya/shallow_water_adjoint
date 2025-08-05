@@ -9,12 +9,11 @@ program shallow_water_test1
 
   real(dp) :: t, maxerr, l1err, l2err, alpha, mse, mass_res
   integer :: n
-  logical :: snapshot_flag
   character(len=256) :: carg
 
   call init_variables()
   call read_alpha(alpha)
-  call read_snapshot_flag(snapshot_flag)
+  call read_output_interval(output_interval)
   call write_grid_params()
   if (command_argument_count() >= 3) then
      call get_command_argument(3, carg)
@@ -30,8 +29,12 @@ program shallow_water_test1
      call analytic_height(ha, lon, lat, t, alpha)
      call calc_error_norms(h, ha, lat, l1err, l2err, maxerr)
      call write_error(t, l1err, l2err, maxerr)
-     if (snapshot_flag .and. mod(n,output_interval) == 0) then
-        call write_snapshot(n, h, u, v)
+     if (output_interval /= -1) then
+        if (output_interval == 0) then
+           if (n == nsteps) call write_snapshot(n, h, u, v)
+        else if (mod(n, output_interval) == 0) then
+           call write_snapshot(n, h, u, v)
+        end if
      end if
      if (n == nsteps) exit
      call rk4_step(h, hn, u, v, lat)

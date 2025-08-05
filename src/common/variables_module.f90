@@ -10,7 +10,7 @@ module variables_module
   real(dp), parameter :: omega=2.d0*pi/(12.d0*day)
   real(dp), parameter :: dt=600.d0
   integer, parameter :: nsteps=nint(12.d0*day/dt)
-  integer, parameter :: output_interval=48
+  integer :: output_interval=48
   real(dp), allocatable :: lon(:), lat(:)
   real(dp), allocatable :: h(:,:), hn(:,:), ha(:,:)
   real(dp), allocatable :: u(:,:), v(:,:)
