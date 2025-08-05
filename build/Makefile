@@ -19,7 +19,8 @@ FAUTODIFF_SRC  = fautodiff_stack.f90
 
 VPATH = ../src/common
 
-all: shallow_water_test1.out shallow_water_test1_forward.out shallow_water_test1_reverse.out
+all: shallow_water_test1.out shallow_water_test1_forward.out shallow_water_test1_reverse.out \
+     shallow_water_test2.out shallow_water_test2_forward.out shallow_water_test2_reverse.out
 
 shallow_water_test1.out: ../src/testcase1/shallow_water_test1.f90 $(COMMON_OBJS)
 >$(FC) $(FFLAGS) -o $@ $^
@@ -28,6 +29,15 @@ shallow_water_test1_forward.out: ../src/testcase1/shallow_water_test1_forward.f9
 >$(FC) $(FFLAGS) -I. -o $@ $^
 
 shallow_water_test1_reverse.out: ../src/testcase1/shallow_water_test1_reverse.f90 $(COMMON_OBJS) $(COMMON_AD_OBJS) $(FAUTODIFF_OBJS)
+>$(FC) $(FFLAGS) -I. -o $@ $^
+
+shallow_water_test2.out: ../src/testcase2/shallow_water_test2.f90 $(COMMON_OBJS)
+>$(FC) $(FFLAGS) -o $@ $^
+
+shallow_water_test2_forward.out: ../src/testcase2/shallow_water_test2_forward.f90 $(COMMON_OBJS) $(COMMON_AD_OBJS) $(FAUTODIFF_OBJS)
+>$(FC) $(FFLAGS) -I. -o $@ $^
+
+shallow_water_test2_reverse.out: ../src/testcase2/shallow_water_test2_reverse.f90 $(COMMON_OBJS) $(COMMON_AD_OBJS) $(FAUTODIFF_OBJS)
 >$(FC) $(FFLAGS) -I. -o $@ $^
 
 %_ad.o: %_ad.f90 $(FAUTODIFF_OBJS)
