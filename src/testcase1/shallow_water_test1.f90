@@ -38,7 +38,7 @@ program shallow_water_test1
         end if
      end if
      if (n == nsteps) exit
-     call rk4_step(h, u, v, hn, un, vn, lat)
+     call rk4_step(h, u, v, hn, un, vn, lat, no_momentum_tendency=.true.)
      h = hn
      u = un
      v = vn

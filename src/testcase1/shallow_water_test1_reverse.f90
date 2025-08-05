@@ -46,7 +46,7 @@ program shallow_water_test1_reverse
      call fautodiff_stack_push_r(u)
      call fautodiff_stack_push_r(v)
      if (n == nsteps) exit
-     call rk4_step(h, u, v, hn, un, vn, lat)
+     call rk4_step(h, u, v, hn, un, vn, lat, no_momentum_tendency=.true.)
      h = hn
      u = un
      v = vn
@@ -77,7 +77,7 @@ program shallow_water_test1_reverse
         h_ad = 0.0_dp
         u_ad = 0.0_dp
         v_ad = 0.0_dp
-        call rk4_step_rev_ad(h, h_ad, u, u_ad, v, v_ad, hn_ad, un_ad, vn_ad, lat)
+        call rk4_step_rev_ad(h, h_ad, u, u_ad, v, v_ad, hn_ad, un_ad, vn_ad, lat, no_momentum_tendency=.true.)
      end if
      if (output_interval /= -1) then
         if (output_interval == 0) then

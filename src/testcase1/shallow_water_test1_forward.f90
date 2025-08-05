@@ -48,7 +48,7 @@ program shallow_water_test1_forward
         end if
      end if
      if (n == nsteps) exit
-     call rk4_step_fwd_ad(h, h_ad, u, u_ad, v, v_ad, hn, hn_ad, un, un_ad, vn, vn_ad, lat)
+     call rk4_step_fwd_ad(h, h_ad, u, u_ad, v, v_ad, hn, hn_ad, un, un_ad, vn, vn_ad, lat, no_momentum_tendency=.true.)
      h_ad = hn_ad
      u_ad = un_ad
      v_ad = vn_ad
