@@ -19,6 +19,8 @@ program shallow_water_test1_reverse
   integer :: n
   character(len=256) :: carg
   real(dp), allocatable :: d(:,:)
+  real(dp) :: un(nlon,nlat), vn(nlon,nlat+1)
+  real(dp) :: un_ad(nlon,nlat), vn_ad(nlon,nlat+1)
 
   call init_variables()
   call read_alpha(alpha)
@@ -41,9 +43,13 @@ program shallow_water_test1_reverse
   call velocity_field(u, v, lon, lat, alpha)
   do n = 0, nsteps
      call fautodiff_stack_push_r(h)
+     call fautodiff_stack_push_r(u)
+     call fautodiff_stack_push_r(v)
      if (n == nsteps) exit
-     call rk4_step(h, hn, u, v, lat)
+     call rk4_step(h, u, v, hn, un, vn, lat)
      h = hn
+     u = un
+     v = vn
   end do
   t = nsteps*dt
   call analytic_height(ha, lon, lat, t, alpha)
@@ -55,21 +61,29 @@ program shallow_water_test1_reverse
   mse_ad = 1.0_dp
   mass_res_ad = 0.0_dp
   h_ad = 0.0_dp
+  u_ad = 0.0_dp
+  v_ad = 0.0_dp
 
   call calc_mass_residual_rev_ad(h, h_ad, mass_res_ad)
   call calc_mse_rev_ad(h, h_ad, ha, mse_ad)
   do n = nsteps, 0, -1
+     call fautodiff_stack_pop_r(v)
+     call fautodiff_stack_pop_r(u)
      call fautodiff_stack_pop_r(h)
      if (n .ne. nsteps) then
         hn_ad = h_ad
+        un_ad = u_ad
+        vn_ad = v_ad
         h_ad = 0.0_dp
-        call rk4_step_rev_ad(h, h_ad, hn_ad, u, u_ad, v, v_ad, lat)
+        u_ad = 0.0_dp
+        v_ad = 0.0_dp
+        call rk4_step_rev_ad(h, h_ad, u, u_ad, v, v_ad, hn_ad, un_ad, vn_ad, lat)
      end if
      if (output_interval /= -1) then
         if (output_interval == 0) then
-           if (n == 0) call write_snapshot(n, h_ad, u, v)
+          if (n == 0) call write_snapshot(n, h_ad, u, v)
         else if (mod(n, output_interval) == 0) then
-           call write_snapshot(n, h_ad, u, v)
+          call write_snapshot(n, h_ad, u, v)
         end if
      end if
   end do

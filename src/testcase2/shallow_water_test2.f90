@@ -9,6 +9,7 @@ program shallow_water_test2
   real(dp) :: t, maxerr, l1err, l2err, mse, mass_res
   integer :: n
   character(len=256) :: carg
+  real(dp) :: un(nlon,nlat), vn(nlon,nlat+1)
 
   call init_variables()
   call read_output_interval(output_interval)
@@ -38,8 +39,10 @@ program shallow_water_test2
         end if
      end if
      if (n == nsteps) exit
-     call rk4_step(h, hn, u, v, lat)
+     call rk4_step(h, u, v, hn, un, vn, lat)
      h = hn
+     u = un
+     v = vn
   end do
   call close_error_file()
   mse = calc_mse(h, ha)
@@ -56,22 +59,22 @@ contains
     integer :: i, j
     real(dp) :: coeff
     real(dp), parameter :: u0 = 20.d0
-    coeff = (radius*u0*omega/g + 0.5d0*u0*u0/g)
+    coeff = radius*omega*u0/g
     do j = 1, nlat
        do i = 1, nlon
-          h(i,j) = h0 - coeff * cos(lat(j))**2
+          h(i,j) = h0 - coeff * sin(lat(j))**2
        end do
     end do
   end subroutine init_geostrophic_height
 
   !$FAD CONSTANT_VARS: lat
   subroutine geostrophic_velocity(u, v, lat)
-    real(dp), intent(out) :: u(nlon+1,nlat), v(nlon,nlat+1)
+    real(dp), intent(out) :: u(nlon,nlat), v(nlon,nlat+1)
     real(dp), intent(in) :: lat(nlat)
     integer :: i, j
     real(dp), parameter :: u0 = 20.d0
     do j = 1, nlat
-       do i = 1, nlon+1
+       do i = 1, nlon
           u(i,j) = u0 * cos(lat(j))
        end do
     end do

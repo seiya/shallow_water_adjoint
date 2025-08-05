@@ -14,6 +14,8 @@ program shallow_water_test1_forward
   real(dp) :: t_ad, maxerr_ad, l1err_ad, l2err_ad, mse_ad, mass_res_ad
   integer :: n
   character(len=256) :: carg
+  real(dp) :: un(nlon,nlat), vn(nlon,nlat+1)
+  real(dp) :: un_ad(nlon,nlat), vn_ad(nlon,nlat+1)
 
   call init_variables()
   call read_alpha(alpha)
@@ -46,9 +48,13 @@ program shallow_water_test1_forward
         end if
      end if
      if (n == nsteps) exit
-     call rk4_step_fwd_ad(h, h_ad, hn, hn_ad, u, u_ad, v, v_ad, lat)
+     call rk4_step_fwd_ad(h, h_ad, u, u_ad, v, v_ad, hn, hn_ad, un, un_ad, vn, vn_ad, lat)
      h_ad = hn_ad
+     u_ad = un_ad
+     v_ad = vn_ad
      h = hn
+     u = un
+     v = vn
   end do
   t = nsteps*dt
   call analytic_height(ha, lon, lat, t, alpha)

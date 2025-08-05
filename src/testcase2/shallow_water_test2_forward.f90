@@ -15,6 +15,8 @@ program shallow_water_test2_forward
   real(dp) :: t_ad, mse_ad, mass_res_ad
   integer :: n
   character(len=256) :: carg
+  real(dp) :: un(nlon,nlat), vn(nlon,nlat+1)
+  real(dp) :: un_ad(nlon,nlat), vn_ad(nlon,nlat+1)
 
   call init_variables()
   call read_output_interval(output_interval)
@@ -38,9 +40,13 @@ program shallow_water_test2_forward
   call geostrophic_velocity_fwd_ad(u, u_ad, v, v_ad, lat)
   do n = 0, nsteps
      if (n == nsteps) exit
-     call rk4_step_fwd_ad(h, h_ad, hn, hn_ad, u, u_ad, v, v_ad, lat)
+     call rk4_step_fwd_ad(h, h_ad, u, u_ad, v, v_ad, hn, hn_ad, un, un_ad, vn, vn_ad, lat)
      h = hn
+     u = un
+     v = vn
      h_ad = hn_ad
+     u_ad = un_ad
+     v_ad = vn_ad
   end do
   mse = calc_mse(h, ha)
   mass_res = calc_mass_residual(h)
@@ -60,25 +66,25 @@ contains
     real(dp), parameter :: u0 = 20.d0
     real(dp) :: coeff
     integer :: i, j
-    coeff = radius*u0*omega/g + 0.5d0*u0*u0/g
+    coeff = radius*omega*u0/g
     do j = 1, nlat
        do i = 1, nlon
           h_ad(i,j) = 0.0_dp
-          h(i,j) = h0 - coeff * cos(lat(j))**2
+          h(i,j) = h0 - coeff * sin(lat(j))**2
        end do
     end do
   end subroutine init_geostrophic_height_fwd_ad
 
   subroutine geostrophic_velocity_fwd_ad(u, u_ad, v, v_ad, lat)
-    real(dp), intent(out) :: u(nlon+1,nlat)
-    real(dp), intent(out) :: u_ad(nlon+1,nlat)
+    real(dp), intent(out) :: u(nlon,nlat)
+    real(dp), intent(out) :: u_ad(nlon,nlat)
     real(dp), intent(out) :: v(nlon,nlat+1)
     real(dp), intent(out) :: v_ad(nlon,nlat+1)
     real(dp), intent(in)  :: lat(nlat)
     real(dp), parameter :: u0 = 20.d0
     integer :: i, j
     do j = 1, nlat
-       do i = 1, nlon+1
+       do i = 1, nlon
           u_ad(i,j) = 0.0_dp
           u(i,j) = u0 * cos(lat(j))
        end do

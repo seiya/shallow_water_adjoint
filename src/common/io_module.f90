@@ -63,10 +63,10 @@ contains
   subroutine write_snapshot(n, h, u, v)
     integer, intent(in) :: n
     real(dp), intent(in) :: h(nlon,nlat)
-    real(dp), intent(in) :: u(nlon+1,nlat), v(nlon,nlat+1)
+    real(dp), intent(in) :: u(nlon,nlat), v(nlon,nlat+1)
     character(len=32) :: filename
     hsp = real(h,sp)
-    usp = real(0.5d0*(u(1:nlon,:) + u(2:nlon+1,:)), sp)
+    usp = real(0.5d0*(u + cshift(u,1,dim=1)), sp)
     vsp = real(0.5d0*(v(:,1:nlat) + v(:,2:nlat+1)), sp)
     write(filename,'("snapshot_",i4.4,".bin")') n
     open(unit=20,file=filename,form='unformatted',access='stream',status='replace')

@@ -18,6 +18,8 @@ program shallow_water_test2_reverse
   integer :: n
   character(len=256) :: carg
   real(dp), allocatable :: d(:,:)
+  real(dp) :: un(nlon,nlat), vn(nlon,nlat+1)
+  real(dp) :: un_ad(nlon,nlat), vn_ad(nlon,nlat+1)
 
   call init_variables()
   call read_output_interval(output_interval)
@@ -39,9 +41,13 @@ program shallow_water_test2_reverse
   call geostrophic_velocity(u, v, lat)
   do n = 0, nsteps
      call fautodiff_stack_push_r(h)
+     call fautodiff_stack_push_r(u)
+     call fautodiff_stack_push_r(v)
      if (n == nsteps) exit
-     call rk4_step(h, hn, u, v, lat)
+     call rk4_step(h, u, v, hn, un, vn, lat)
      h = hn
+     u = un
+     v = vn
   end do
   mse = calc_mse(h, ha)
   mass_res = calc_mass_residual(h)
@@ -55,11 +61,17 @@ program shallow_water_test2_reverse
   call calc_mass_residual_rev_ad(h, h_ad, mass_res_ad)
   call calc_mse_rev_ad(h, h_ad, ha, mse_ad)
   do n = nsteps, 0, -1
+     call fautodiff_stack_pop_r(v)
+     call fautodiff_stack_pop_r(u)
      call fautodiff_stack_pop_r(h)
      if (n /= nsteps) then
         hn_ad = h_ad
+        un_ad = u_ad
+        vn_ad = v_ad
         h_ad = 0.0_dp
-        call rk4_step_rev_ad(h, h_ad, hn_ad, u, u_ad, v, v_ad, lat)
+        u_ad = 0.0_dp
+        v_ad = 0.0_dp
+        call rk4_step_rev_ad(h, h_ad, u, u_ad, v, v_ad, hn_ad, un_ad, vn_ad, lat)
      end if
      if (output_interval /= -1) then
         if (output_interval == 0) then
@@ -83,21 +95,21 @@ contains
     real(dp), parameter :: u0 = 20.d0
     real(dp) :: coeff
     integer :: i, j
-    coeff = radius*u0*omega/g + 0.5d0*u0*u0/g
+    coeff = radius*omega*u0/g
     do j = 1, nlat
        do i = 1, nlon
-          h(i,j) = h0 - coeff * cos(lat(j))**2
+          h(i,j) = h0 - coeff * sin(lat(j))**2
        end do
     end do
   end subroutine init_geostrophic_height
 
   subroutine geostrophic_velocity(u, v, lat)
-    real(dp), intent(out) :: u(nlon+1,nlat), v(nlon,nlat+1)
+    real(dp), intent(out) :: u(nlon,nlat), v(nlon,nlat+1)
     real(dp), intent(in) :: lat(nlat)
     real(dp), parameter :: u0 = 20.d0
     integer :: i, j
     do j = 1, nlat
-       do i = 1, nlon+1
+       do i = 1, nlon
           u(i,j) = u0 * cos(lat(j))
        end do
     end do
