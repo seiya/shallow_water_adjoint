@@ -127,28 +127,28 @@ contains
           ue = u(ip1,j)
           uw = u(i,j)
           if (ue > 0.d0) then
-             fe = ue*h(i,j)
+             fe = ue * h(i,j)
           else
-             fe = ue*h(ip1,j)
+             fe = ue * h(ip1,j)
           end if
           if (uw > 0.d0) then
-             fw = uw*h(im1,j)
+             fw = uw * h(im1,j)
           else
-             fw = uw*h(i,j)
+             fw = uw * h(i,j)
           end if
-          vn = v(i,j+1)
-          vs = v(i,j)
+          vn = v(i,j+1) * cos((lat(j) + lat(jp1)) * 0.5d0)
+          vs = v(i,j) * cos((lat(jm1) + lat(j)) * 0.5d0)
           if (vn > 0.d0) then
-             fn = vn*h(i,j)
+             fn = vn * h(i,j)
           else
-             fn = vn*h(i,jp1)
+             fn = vn * h(i,jp1)
           end if
           if (vs > 0.d0) then
-             fs = vs*h(i,jm1)
+             fs = vs * h(i,jm1)
           else
-             fs = vs*h(i,j)
+             fs = vs * h(i,j)
           end if
-          dhdt(i,j) = -((fe - fw)/(dlon*radius*cos(lat(j))) + (fn - fs)/(dlat*radius))
+          dhdt(i,j) = -( (fe - fw)/dlon + (fn - fs)/dlat ) / (radius * cos(lat(j)))
        end do
     end do
 
@@ -162,18 +162,26 @@ contains
 
     ! zonal momentum
     do j=1,nlat
+       jp1 = mod(j,nlat)+1
+       jm1 = mod(j-2+nlat,nlat)+1
        fcor = 2.d0*omega*sin(lat(j))
        do i=1,nlon
-          im1 = mod(i-2+nlon,nlon)+1
+         ip1 = mod(i,nlon)+1
+         im1 = mod(i-2+nlon,nlon)+1
           h_e = h(i,j)
           h_w = h(im1,j)
           v_avg = 0.25d0*(v(im1,j) + v(im1,j+1) + v(i,j) + v(i,j+1))
-          dudt(i,j) = -g*(h_e - h_w)/(dlon*radius*cos(lat(j))) + fcor*v_avg
+          dudt(i,j) = - u(i,j) * (u(ip1,j) - u(im1,j)) / (2.0d0 * dlon * radius * cos(lat(j))) &
+                      - v_avg * (u(i,jp1) - u(i,jm1)) / (2.0d0 * dlat * radius) &
+                      + u(i,j) * v_avg * tan(lat(j)) / radius &
+                      - g * (h_e - h_w) / (dlon * radius * cos(lat(j))) &
+                      + fcor * v_avg
        end do
     end do
 
     ! meridional momentum
     do j=2,nlat
+        jp1 = j+1
         jm1 = j-1
         fcor = 2.d0*omega*sin(-pi/2.d0 + (j-1)*dlat)
         do i=1,nlon
@@ -182,7 +190,11 @@ contains
           h_n = h(i,j)
           h_s = h(i,jm1)
           u_avg = 0.25d0*(u(i,jm1) + u(ip1,jm1) + u(i,j) + u(ip1,j))
-          dvdt(i,j) = -g*(h_n - h_s)/(dlat*radius) - fcor*u_avg
+          dvdt(i,j) = - u_avg * (v(ip1,j) - v(im1,j)) / (2.0d0 * dlon * radius * cos(lat(j))) &
+                      - v(i,j) * (v(i,jp1) - v(i,jm1)) / (2.0d0 * dlat * radius) &
+                      - u_avg**2 * tan(lat(j)) / radius &
+                      - g * (h_n - h_s) / (dlat * radius) &
+                      - fcor * u_avg
        end do
     end do
     dvdt(:,1) = 0.d0

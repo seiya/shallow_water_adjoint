@@ -40,8 +40,6 @@ program shallow_water_test1
      if (n == nsteps) exit
      call rk4_step(h, u, v, hn, un, vn, lat, no_momentum_tendency=.true.)
      h = hn
-     u = un
-     v = vn
   end do
   call close_error_file()
   mse = calc_mse(h, ha)
