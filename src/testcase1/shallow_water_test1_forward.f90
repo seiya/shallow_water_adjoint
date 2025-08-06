@@ -22,7 +22,6 @@ program shallow_water_test1_forward
   call read_output_interval(output_interval)
   call write_grid_params()
   call init_variables_fwd_ad()
-  ha = 0.0_dp
   if (command_argument_count() >= 3) then
      call get_command_argument(3, carg)
      call read_field(h, trim(carg))
@@ -33,7 +32,7 @@ program shallow_water_test1_forward
      call get_command_argument(4, carg)
      call read_field(h_ad, trim(carg))
   else
-     h_ad = 0.0_dp
+     h_ad(nlon/2,nlat/2) = 1.0_dp
   end if
   u_ad = 0.0_dp
   v_ad = 0.0_dp
@@ -50,11 +49,7 @@ program shallow_water_test1_forward
      if (n == nsteps) exit
      call rk4_step_fwd_ad(h, h_ad, u, u_ad, v, v_ad, hn, hn_ad, un, un_ad, vn, vn_ad, lat, no_momentum_tendency=.true.)
      h_ad = hn_ad
-     u_ad = un_ad
-     v_ad = vn_ad
      h = hn
-     u = un
-     v = vn
   end do
   t = nsteps*dt
   call analytic_height(ha, lon, lat, t, alpha)
@@ -63,4 +58,5 @@ program shallow_water_test1_forward
   call write_cost_log(mse, mass_res)
   print *, mse_ad, mass_res_ad
   call finalize_variables_fwd_ad()
+
 end program shallow_water_test1_forward

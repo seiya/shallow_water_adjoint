@@ -4,7 +4,7 @@ module variables_module
   integer, parameter :: nlon=128, nlat=64
   real(dp), parameter :: pi=3.14159265358979323846d0
   real(dp), parameter :: radius=6371220.d0
-  real(dp) :: g=9.80616d0
+  real(dp), parameter :: g=9.80616d0
   real(dp), parameter :: day=86400.d0
   real(dp), parameter :: dlon=2.d0*pi/nlon, dlat=pi/nlat
   real(dp), parameter :: h0=10000.d0, h1=2000.d0
@@ -20,7 +20,7 @@ module variables_module
   !$FAD CONSTANT_VARS: lon, lat
   !$FAD CONSTANT_VARS: ha
   !$FAD CONSTANT_VARS: hsp, usp, vsp
-  !$FAD CONSTANT_VARS: g, omega
+  !$FAD CONSTANT_VARS: omega
 
 contains
 

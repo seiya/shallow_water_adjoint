@@ -35,12 +35,22 @@ program shallow_water_test2_forward
      call get_command_argument(4, carg)
      call read_field(h_ad, trim(carg))
   else
-     h_ad = 0.0_dp
+     h_ad(nlon/2, nlat/2) = 1.0_dp
   end if
   call geostrophic_velocity_fwd_ad(u, u_ad, v, v_ad, lat)
   do n = 0, nsteps
+     t = n*dt
+     if (output_interval /= -1) then
+        if (output_interval == 0) then
+           if (n == nsteps) call write_snapshot(n, h_ad, u, v)
+        else if (mod(n, output_interval) == 0) then
+           call write_snapshot(n, h_ad, u, v)
+        end if
+     end if
      if (n == nsteps) exit
      call rk4_step_fwd_ad(h, h_ad, u, u_ad, v, v_ad, hn, hn_ad, un, un_ad, vn, vn_ad, lat)
+     !print *, minval(hn), maxval(hn), minval(un), maxval(un), minval(vn), maxval(vn)
+     print *, minval(hn_ad), maxval(hn_ad), minval(un_ad), maxval(un_ad), minval(vn_ad), maxval(vn_ad)
      h = hn
      u = un
      v = vn

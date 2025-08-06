@@ -39,7 +39,7 @@ program shallow_water_test1_reverse
   else
      d = 0.0_dp
   end if
-  mass_res = calc_mass_residual(h)
+
   call velocity_field(u, v, lon, lat, alpha)
   do n = 0, nsteps
      call fautodiff_stack_push_r(h)
@@ -48,8 +48,6 @@ program shallow_water_test1_reverse
      if (n == nsteps) exit
      call rk4_step(h, u, v, hn, un, vn, lat, no_momentum_tendency=.true.)
      h = hn
-     u = un
-     v = vn
   end do
   t = nsteps*dt
   call analytic_height(ha, lon, lat, t, alpha)
