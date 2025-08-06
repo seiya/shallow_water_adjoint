@@ -92,15 +92,44 @@ contains
     real(dp), intent(out) :: v_ad(nlon,nlat+1)
     real(dp), intent(in)  :: lat(nlat)
     real(dp), parameter :: u0 = 20.d0
-    integer :: i, j
+    integer :: i, j, ip1, im1, jp1, jm1
+    real(dp) :: fcor
+    real(dp), parameter :: eps = 1.0e-6_dp
+
     do j = 1, nlat
        do i = 1, nlon
-          u_ad(i,j) = 0.0_dp
           u(i,j) = u0 * cos(lat(j))
        end do
     end do
-    v_ad = 0.0_dp
     v = 0.d0
+
+    u_ad = 0.d0
+    do j = 2, nlat-1
+       jp1 = j + 1
+       jm1 = j - 1
+       fcor = 2.d0*omega*sin(lat(j))
+       if (abs(fcor) > eps) then
+          do i = 1, nlon
+             u_ad(i,j) = -(g/fcor) * (h_ad(i,jp1) - h_ad(i,jm1)) / &
+                          & (2.d0*dlat*radius)
+          end do
+       end if
+    end do
+
+    v_ad = 0.d0
+    do j = 2, nlat
+       fcor = 2.d0*omega*sin(lat(j))
+       if (abs(fcor) > eps) then
+          do i = 1, nlon
+             ip1 = mod(i, nlon) + 1
+             im1 = mod(i-2 + nlon, nlon) + 1
+             v_ad(i,j) = (g/fcor) * (h_ad(ip1,j) - h_ad(im1,j)) / &
+                          & (2.d0*dlon*radius*cos(lat(j)))
+          end do
+       end if
+    end do
+    v_ad(:,1) = 0.d0
+    v_ad(:,nlat+1) = 0.d0
   end subroutine geostrophic_velocity_fwd_ad
 
 end program shallow_water_test2_forward
