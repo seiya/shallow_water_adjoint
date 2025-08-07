@@ -1,19 +1,18 @@
 module rk4_module
   use constants_module, only: dp
-  use variables_module, only: nx, ny, dt
+  use variables_module, only: nx, ny, dt, ihalo, is, ie, exchange_halo_x
   use equations_module, only: rhs
   implicit none
 contains
 
-  !$FAD CONSTANT_VARS: no_momentum_tendency
   subroutine rk4_step(h,u,v,hn,un,vn,no_momentum_tendency)
-    real(dp), intent(in) :: h(nx,ny), u(nx,ny), v(nx,ny+1)
-    real(dp), intent(out) :: hn(nx,ny), un(nx,ny), vn(nx,ny+1)
+    real(dp), intent(in) :: h(is:ie,ny), u(is:ie,ny), v(is:ie,ny+1)
+    real(dp), intent(out) :: hn(is:ie,ny), un(is:ie,ny), vn(is:ie,ny+1)
     logical, intent(in), optional :: no_momentum_tendency
-    real(dp) :: k1h(nx,ny), k2h(nx,ny), k3h(nx,ny), k4h(nx,ny)
-    real(dp) :: k1u(nx,ny), k2u(nx,ny), k3u(nx,ny), k4u(nx,ny)
-    real(dp) :: k1v(nx,ny+1), k2v(nx,ny+1), k3v(nx,ny+1), k4v(nx,ny+1)
-    real(dp) :: htmp(nx,ny), utmp(nx,ny), vtmp(nx,ny+1)
+    real(dp) :: k1h(is:ie,ny), k2h(is:ie,ny), k3h(is:ie,ny), k4h(is:ie,ny)
+    real(dp) :: k1u(is:ie,ny), k2u(is:ie,ny), k3u(is:ie,ny), k4u(is:ie,ny)
+    real(dp) :: k1v(is:ie,ny+1), k2v(is:ie,ny+1), k3v(is:ie,ny+1), k4v(is:ie,ny+1)
+    real(dp) :: htmp(is:ie,ny), utmp(is:ie,ny), vtmp(is:ie,ny+1)
     logical :: skip_momentum
     skip_momentum = .false.
     if (present(no_momentum_tendency)) skip_momentum = no_momentum_tendency
@@ -21,16 +20,22 @@ contains
     if (skip_momentum) then
        call rhs(h, u, v, k1h, k1u, k1v, no_momentum_tendency=.true.)
        htmp = h + 0.5d0*dt*k1h
+       call exchange_halo_x(htmp)
        call rhs(htmp, u, v, k2h, k2u, k2v, no_momentum_tendency=.true.)
        htmp = h + 0.5d0*dt*k2h
+       call exchange_halo_x(htmp)
        call rhs(htmp, u, v, k3h, k3u, k3v, no_momentum_tendency=.true.)
        htmp = h + dt*k3h
+       call exchange_halo_x(htmp)
        call rhs(htmp, u, v, k4h, k4u, k4v, no_momentum_tendency=.true.)
        hn = h + dt*(k1h + 2.d0*k2h + 2.d0*k3h + k4h)/6.d0
        un = u
        vn = v
        vn(:,1) = 0.d0
        vn(:,ny+1) = 0.d0
+       call exchange_halo_x(hn)
+       call exchange_halo_x(un)
+       call exchange_halo_x(vn)
        return
     end if
 
@@ -38,20 +43,32 @@ contains
     htmp = h + 0.5d0*dt*k1h
     utmp = u + 0.5d0*dt*k1u
     vtmp = v + 0.5d0*dt*k1v
+    call exchange_halo_x(htmp)
+    call exchange_halo_x(utmp)
+    call exchange_halo_x(vtmp)
     call rhs(htmp, utmp, vtmp, k2h, k2u, k2v, no_momentum_tendency=.false.)
     htmp = h + 0.5d0*dt*k2h
     utmp = u + 0.5d0*dt*k2u
     vtmp = v + 0.5d0*dt*k2v
+    call exchange_halo_x(htmp)
+    call exchange_halo_x(utmp)
+    call exchange_halo_x(vtmp)
     call rhs(htmp, utmp, vtmp, k3h, k3u, k3v, no_momentum_tendency=.false.)
     htmp = h + dt*k3h
     utmp = u + dt*k3u
     vtmp = v + dt*k3v
+    call exchange_halo_x(htmp)
+    call exchange_halo_x(utmp)
+    call exchange_halo_x(vtmp)
     call rhs(htmp, utmp, vtmp, k4h, k4u, k4v, no_momentum_tendency=.false.)
     hn = h + dt*(k1h + 2.d0*k2h + 2.d0*k3h + k4h)/6.d0
     un = u + dt*(k1u + 2.d0*k2u + 2.d0*k3u + k4u)/6.d0
     vn = v + dt*(k1v + 2.d0*k2v + 2.d0*k3v + k4v)/6.d0
     vn(:,1) = 0.d0
     vn(:,ny+1) = 0.d0
+    call exchange_halo_x(hn)
+    call exchange_halo_x(un)
+    call exchange_halo_x(vn)
   end subroutine rk4_step
 
 end module rk4_module

@@ -1,6 +1,7 @@
 module io_module
   use constants_module, only: dp, sp
-  use variables_module, only: nx, ny, day, pi, h, u, v, hsp, usp, vsp
+  use variables_module, only: nx, ny, day, pi, h, u, v, &
+                              ihalo, is, ie, exchange_halo_x
   implicit none
 contains
   !$FAD SKIP
@@ -29,11 +30,12 @@ contains
   !$FAD SKIP
   subroutine read_field(field, filename)
     !! Read a two-dimensional field from a binary file.
-    real(dp), intent(out) :: field(nx,ny)
+    real(dp), intent(out) :: field(is:ie,ny)
     character(len=*), intent(in) :: filename
     open(unit=50,file=filename,form='unformatted',access='stream',status='old')
-    read(50) field
+    read(50) field(1:nx,1:ny)
     close(50)
+    call exchange_halo_x(field)
   end subroutine read_field
 
   !$FAD SKIP
@@ -62,12 +64,13 @@ contains
   !$FAD SKIP
   subroutine write_snapshot(n, h, u, v)
     integer, intent(in) :: n
-    real(dp), intent(in) :: h(nx,ny)
-    real(dp), intent(in) :: u(nx,ny), v(nx,ny+1)
+    real(dp), intent(in) :: h(is:ie,ny)
+    real(dp), intent(in) :: u(is:ie,ny), v(is:ie,ny+1)
+    real(sp) :: hsp(nx,ny), usp(nx,ny), vsp(nx,ny)
     character(len=32) :: filename
-    hsp = real(h,sp)
-    usp = real(0.5d0*(u + cshift(u,1,dim=1)), sp)
-    vsp = real(0.5d0*(v(:,1:ny) + v(:,2:ny+1)), sp)
+    hsp = real(h(1:nx,:),sp)
+    usp = real(0.5d0*(u(1:nx,:) + u(2:nx+1,:)), sp)
+    vsp = real(0.5d0*(v(1:nx,1:ny) + v(1:nx,2:ny+1)), sp)
     write(filename,'("snapshot_",i4.4,".bin")') n
     open(unit=20,file=filename,form='unformatted',access='stream',status='replace')
     write(20) hsp, usp, vsp
