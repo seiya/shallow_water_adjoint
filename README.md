@@ -1,6 +1,11 @@
 # shallow_water_adjoint
 Shallow water equation model with adjoint model
 
+The testcases included here follow the benchmark proposed by Williamson
+et al. (1992).  Instead of the original spherical geometry, they solve a
+channel flow in Cartesian coordinates with free-slip boundaries in the
+y direction and periodic boundaries in the x direction.
+
 The test program `shallow_water_test1` accepts two optional command-line
 arguments:
 
