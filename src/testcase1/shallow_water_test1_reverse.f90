@@ -13,7 +13,7 @@ program shallow_water_test1_reverse
   use fautodiff_stack
   implicit none
 
-  real(dp) :: t, maxerr, l1err, l2err, alpha, mse, mass_res
+  real(dp) :: t, maxerr, l1err, l2err, mse, mass_res
   real(dp) :: maxerr_ad, l1err_ad, l2err_ad, mse_ad, mass_res_ad
   real(dp) :: grad_dot_d
   integer :: n
@@ -23,18 +23,17 @@ program shallow_water_test1_reverse
   real(dp) :: un_ad(nx,ny), vn_ad(nx,ny+1)
 
   call init_variables()
-  call read_alpha(alpha)
   call read_output_interval(output_interval)
   call write_grid_params()
-  if (command_argument_count() >= 3) then
-     call get_command_argument(3, carg)
+  if (command_argument_count() >= 2) then
+     call get_command_argument(2, carg)
      call read_field(h, trim(carg))
   else
      call init_height(h, x, y)
   end if
   allocate(d(nx,ny))
-  if (command_argument_count() >= 4) then
-     call get_command_argument(4, carg)
+  if (command_argument_count() >= 3) then
+     call get_command_argument(3, carg)
      call read_field(d, trim(carg))
   else
      d = 0.0_dp

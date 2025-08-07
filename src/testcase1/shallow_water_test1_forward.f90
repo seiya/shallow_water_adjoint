@@ -10,7 +10,7 @@ program shallow_water_test1_forward
   use io_module
   implicit none
 
-  real(dp) :: t, maxerr, l1err, l2err, alpha, mse, mass_res
+  real(dp) :: t, maxerr, l1err, l2err, mse, mass_res
   real(dp) :: t_ad, maxerr_ad, l1err_ad, l2err_ad, mse_ad, mass_res_ad
   integer :: n
   character(len=256) :: carg
@@ -18,18 +18,17 @@ program shallow_water_test1_forward
   real(dp) :: un_ad(nx,ny), vn_ad(nx,ny+1)
 
   call init_variables()
-  call read_alpha(alpha)
   call read_output_interval(output_interval)
   call write_grid_params()
   call init_variables_fwd_ad()
-  if (command_argument_count() >= 3) then
-     call get_command_argument(3, carg)
+  if (command_argument_count() >= 2) then
+     call get_command_argument(2, carg)
      call read_field(h, trim(carg))
   else
      call init_height(h, x, y)
   end if
-  if (command_argument_count() >= 4) then
-     call get_command_argument(4, carg)
+  if (command_argument_count() >= 3) then
+     call get_command_argument(3, carg)
      call read_field(h_ad, trim(carg))
   else
      h_ad(nx/2,ny/2) = 1.0_dp
