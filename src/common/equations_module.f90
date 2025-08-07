@@ -62,6 +62,43 @@ contains
     end do
   end subroutine init_topography
 
+  subroutine init_geostrophic_height(h, y)
+    real(dp), intent(out) :: h(nx,ny)
+    real(dp), intent(in) :: y(ny)
+    integer :: i, j
+    real(dp), parameter :: coeff = f0 * u0 * radius / g
+    do j = 1, ny
+       do i = 1, nx
+          h(i,j) = h0 + coeff * sin(y(j)/radius)
+       end do
+    end do
+  end subroutine init_geostrophic_height
+
+  subroutine geostrophic_velocity(u, v, h)
+    real(dp), intent(out) :: u(nx,ny), v(nx,ny+1)
+    real(dp), intent(in)  :: h(nx,ny)
+    integer :: i, j
+    integer :: ip1, im1, jp1, jm1
+    do j = 1, ny
+       jp1 = min(j+1, ny)
+       jm1 = max(j-1, 1)
+       do i = 1, nx
+          im1 = mod(i-2+nx, nx) + 1
+          u(i,j) = - g / f0 * ((h(im1,jp1) + h(i,jp1)) - (h(im1,jm1) + h(i,jm1))) / (4.0d0 * dy)
+       end do
+    end do
+    do j = 2, ny
+       jm1 = j - 1
+       do i = 1, nx
+          ip1 = mod(i, nx) + 1
+          im1 = mod(i-2+nx, nx) + 1
+          v(i,j) = g / f0 * ((h(ip1,jm1) + h(ip1,j)) - (h(im1,jm1) + h(im1,j))) / (4.0d0 * dx)
+       end do
+    end do
+    v(:,1) = 0.0d0
+    v(:,ny+1) = 0.0d0
+  end subroutine geostrophic_velocity
+
   !$FAD SKIP
   subroutine analytic_height(ha, x, y, t)
     real(dp), intent(out) :: ha(nx,ny)

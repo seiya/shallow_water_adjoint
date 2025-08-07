@@ -17,6 +17,7 @@ program shallow_water_test5_forward
   character(len=256) :: carg
   real(dp) :: un(nx,ny), vn(nx,ny+1)
   real(dp) :: un_ad(nx,ny), vn_ad(nx,ny+1)
+  real(dp) :: hgeo(nx,ny)
 
   call init_variables()
   call init_variables_fwd_ad()
@@ -25,9 +26,9 @@ program shallow_water_test5_forward
   call init_topography(b, x, y)
   if (command_argument_count() >= 2) then
      call get_command_argument(2, carg)
-     call read_field(h, trim(carg))
+     call read_field(hgeo, trim(carg))
   else
-     h = h0 - b
+     call init_geostrophic_height(hgeo, y)
   end if
   if (command_argument_count() >= 3) then
      call get_command_argument(3, carg)
@@ -36,9 +37,8 @@ program shallow_water_test5_forward
      h_ad = 0.d0
      h_ad(nx/2, ny/2) = 1.d0
   end if
-  u_ad = 0.d0
-  v_ad = 0.d0
-  call velocity_field(u, v, x, y)
+  call geostrophic_velocity_fwd_ad(u, u_ad, v, v_ad, hgeo, h_ad)
+  h = hgeo - b
   mass_res = calc_mass_residual(h)
   energy_res = calc_energy_residual(h, u, v)
   do n = 0, nsteps

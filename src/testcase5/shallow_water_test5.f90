@@ -11,6 +11,7 @@ program shallow_water_test5
   integer :: n
   real(dp) :: un(nx,ny), vn(nx,ny+1)
   character(len=256) :: carg
+  real(dp) :: hgeo(nx,ny)
 
   call init_variables()
   call read_output_interval(output_interval)
@@ -18,11 +19,12 @@ program shallow_water_test5
   call init_topography(b, x, y)
   if (command_argument_count() >= 2) then
      call get_command_argument(2, carg)
-     call read_field(h, trim(carg))
+     call read_field(hgeo, trim(carg))
   else
-     h = h0 - b
+     call init_geostrophic_height(hgeo, y)
   end if
-  call velocity_field(u, v, x, y)
+  call geostrophic_velocity(u, v, hgeo)
+  h = hgeo - b
   mass_res = calc_mass_residual(h)
   energy_res = calc_energy_residual(h, u, v)
   do n = 0, nsteps
