@@ -76,14 +76,15 @@ program shallow_water_test1_reverse
         v_ad = 0.0_dp
         call rk4_step_rev_ad(h, h_ad, u, u_ad, v, v_ad, hn_ad, un_ad, vn_ad, no_momentum_tendency=.true.)
      end if
-     if (output_interval /= -1) then
-        if (output_interval == 0) then
-          if (n == 0) call write_snapshot(n, h_ad, u, v)
-        else if (mod(n, output_interval) == 0) then
+     if (output_interval > 0) then
+        if (mod(n, output_interval) == 0) then
           call write_snapshot(n, h_ad, u, v)
         end if
      end if
   end do
+  if (output_interval == 0) then
+     call write_snapshot(0, h_ad, u, v)
+  end if
   grad_dot_d = sum(h_ad*d)
   print *, sum(h_ad), minval(h_ad), maxval(h_ad)
   print *, grad_dot_d

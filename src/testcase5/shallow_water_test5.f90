@@ -29,10 +29,8 @@ program shallow_water_test5
   energy_res = calc_energy_residual(h, u, v)
   do n = 0, nsteps
      t = n*dt
-     if (output_interval /= -1) then
-        if (output_interval == 0) then
-           if (n == nsteps) call write_snapshot(n, h, u, v)
-        else if (mod(n, output_interval) == 0) then
+     if (output_interval > 0) then
+        if (mod(n, output_interval) == 0) then
            call write_snapshot(n, h, u, v)
         end if
      end if
@@ -42,6 +40,9 @@ program shallow_water_test5
      u = un
      v = vn
   end do
+  if (output_interval == 0) then
+     call write_snapshot(nsteps, h, u, v)
+  end if
   mass_res = calc_mass_residual(h)
   energy_res = calc_energy_residual(h, u, v)
   wave = calc_wave_pattern(h)

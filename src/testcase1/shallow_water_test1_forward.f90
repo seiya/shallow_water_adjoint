@@ -38,10 +38,8 @@ program shallow_water_test1_forward
   call velocity_field(u, v, x, y)
   do n = 0, nsteps
      t = n*dt
-     if (output_interval /= -1) then
-        if (output_interval == 0) then
-           if (n == nsteps) call write_snapshot(n, h_ad, u, v)
-        else if (mod(n, output_interval) == 0) then
+     if (output_interval > 0) then
+        if (mod(n, output_interval) == 0) then
            call write_snapshot(n, h_ad, u, v)
         end if
      end if
@@ -50,6 +48,9 @@ program shallow_water_test1_forward
      h_ad = hn_ad
      h = hn
   end do
+  if (output_interval == 0) then
+     call write_snapshot(nsteps, h_ad, u, v)
+  end if
   t = nsteps*dt
   call analytic_height(ha, x, y, t)
   call calc_mse_fwd_ad(h, h_ad, ha, mse, mse_ad)

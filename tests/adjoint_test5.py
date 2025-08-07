@@ -14,6 +14,21 @@ def read_snapshot(path, nlon, nlat):
     return data.reshape((nlon, nlat), order='F').astype(np.float64)
 
 
+def geostrophic_height(nlon, nlat):
+    pi = np.pi
+    radius = 6371220.0
+    g = 9.80616
+    day = 86400.0
+    omega = 2.0 * pi / (12.0 * day)
+    h0 = 10000.0
+    u0 = 20.0
+    dlat = pi / nlat
+    lat = -pi / 2 + (np.arange(nlat) + 0.5) * dlat
+    coeff = radius * omega * u0 / g
+    hlat = h0 - coeff * np.sin(lat) ** 2
+    return np.repeat(hlat[np.newaxis, :], nlon, axis=0)
+
+
 def main():
     build_dir = Path(__file__).resolve().parents[1] / 'build'
     subprocess.run(['make', 'shallow_water_test5_forward.out',
@@ -24,7 +39,7 @@ def main():
 
     nlon, nlat = 128, 64
     rng = np.random.default_rng(0)
-    x = rng.standard_normal((nlon, nlat))
+    x = geostrophic_height(nlon, nlat)
     u = rng.standard_normal((nlon, nlat))
     v = rng.standard_normal()
 
