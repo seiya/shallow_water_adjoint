@@ -82,4 +82,14 @@ contains
     write(40,'(a,1x,e25.16)') 'MassResidual', mass_res
     close(40)
   end subroutine write_cost_log
+
+  !$FAD SKIP
+  subroutine write_cost_log2(mass_res, energy_res, wave)
+    real(dp), intent(in) :: mass_res, energy_res, wave
+    open(unit=40,file='cost.log',status='replace')
+    write(40,'(a,1x,e25.16)') 'MassResidual', mass_res
+    write(40,'(a,1x,e25.16)') 'EnergyResidual', energy_res
+    write(40,'(a,1x,e25.16)') 'WavePattern', wave
+    close(40)
+  end subroutine write_cost_log2
 end module io_module

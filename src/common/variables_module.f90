@@ -18,9 +18,10 @@ module variables_module
   real(dp), allocatable :: x(:), y(:)
   real(dp), allocatable :: h(:,:), hn(:,:), ha(:,:)
   real(dp), allocatable :: u(:,:), v(:,:)
+  real(dp), allocatable :: b(:,:)
   real(sp), allocatable :: hsp(:,:), usp(:,:), vsp(:,:)
 
-  !$FAD CONSTANT_VARS: x, y
+  !$FAD CONSTANT_VARS: x, y, b
   !$FAD CONSTANT_VARS: ha
   !$FAD CONSTANT_VARS: hsp, usp, vsp
 
@@ -31,6 +32,7 @@ contains
     allocate(x(nx), y(ny))
     allocate(h(nx,ny), hn(nx,ny), ha(nx,ny))
     allocate(u(nx,ny), v(nx,ny+1))
+    allocate(b(nx,ny))
     allocate(hsp(nx,ny), usp(nx,ny), vsp(nx,ny))
     do i=1,nx
        x(i) = (i-0.5d0)*dx
@@ -48,6 +50,7 @@ contains
     if (allocated(ha)) deallocate(ha)
     if (allocated(u)) deallocate(u)
     if (allocated(v)) deallocate(v)
+    if (allocated(b)) deallocate(b)
     if (allocated(hsp)) deallocate(hsp)
     if (allocated(usp)) deallocate(usp)
     if (allocated(vsp)) deallocate(vsp)
