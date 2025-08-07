@@ -75,7 +75,10 @@ program shallow_water_test2_reverse
      end if
      if (output_interval /= -1) then
         if (output_interval == 0) then
-           if (n == 0) call write_snapshot(n, h_ad, u, v)
+           if (n == 0) then
+              call geostrophic_velocity_rev_ad(u, u_ad, v, v_ad, h, h_ad)
+              call write_snapshot(n, h_ad, u, v)
+           end if
         else if (mod(n, output_interval) == 0) then
            call write_snapshot(n, h_ad, u, v)
         end if
@@ -126,5 +129,44 @@ contains
     v(:,1) = 0.0d0
     v(:,ny+1) = 0.0d0
   end subroutine geostrophic_velocity
+
+  subroutine geostrophic_velocity_rev_ad(u, u_ad, v, v_ad, h, h_ad)
+    real(dp), intent(in)    :: u(nx,ny), v(nx,ny+1)
+    real(dp), intent(inout) :: u_ad(nx,ny), v_ad(nx,ny+1)
+    real(dp), intent(in)    :: h(nx,ny)
+    real(dp), intent(inout) :: h_ad(nx,ny)
+    integer :: i, j, ip1, im1, jp1, jm1
+    real(dp) :: coeff
+
+    coeff = - g / f0 / (4.0d0 * dy)
+    do j = 1, ny
+       jp1 = min(j+1, ny)
+       jm1 = max(j-1, 1)
+       do i = 1, nx
+          im1 = mod(i-2+nx, nx) + 1
+          h_ad(im1, jp1) = h_ad(im1, jp1) + coeff * u_ad(i,j)
+          h_ad(i,   jp1) = h_ad(i,   jp1) + coeff * u_ad(i,j)
+          h_ad(im1, jm1) = h_ad(im1, jm1) - coeff * u_ad(i,j)
+          h_ad(i,   jm1) = h_ad(i,   jm1) - coeff * u_ad(i,j)
+       end do
+    end do
+    u_ad(:,:) = 0.0d0
+
+    v_ad(:,1) = 0.0d0
+    v_ad(:,ny+1) = 0.0d0
+    coeff = g / f0 / (4.0d0 * dx)
+    do j = 2, ny
+       jm1 = j - 1
+       do i = 1, nx
+          ip1 = mod(i, nx) + 1
+          im1 = mod(i-2+nx, nx) + 1
+          h_ad(ip1, jm1) = h_ad(ip1, jm1) + coeff * v_ad(i,j)
+          h_ad(ip1, j)   = h_ad(ip1, j)   + coeff * v_ad(i,j)
+          h_ad(im1, jm1) = h_ad(im1, jm1) - coeff * v_ad(i,j)
+          h_ad(im1, j)   = h_ad(im1, j)   - coeff * v_ad(i,j)
+       end do
+    end do
+    v_ad(:,:) = 0.0d0
+  end subroutine geostrophic_velocity_rev_ad
 
 end program shallow_water_test2_reverse
