@@ -1,6 +1,6 @@
 module equations_module
   use constants_module, only: dp
-  use variables_module, only: nx, ny, Lx, Ly, dx, dy, g, radius, u0, f0, h0, h1, pi
+  use variables_module, only: nx, ny, Lx, Ly, dx, dy, g, radius, u0, f0, h0, h1, pi, b
   implicit none
 contains
 
@@ -40,6 +40,27 @@ contains
     end do
     v(:,:) = 0.d0
   end subroutine velocity_field
+
+  !$FAD SKIP
+  subroutine init_topography(b, x, y)
+    real(dp), intent(out) :: b(nx,ny)
+    real(dp), intent(in) :: x(nx), y(ny)
+    real(dp) :: x0, y0, r0, dist
+    integer :: i,j
+    x0 = 0.5d0*Lx
+    y0 = 0.5d0*Ly
+    r0 = radius/4.d0
+    do j=1,ny
+       do i=1,nx
+          dist = sqrt((x(i)-x0)**2 + (y(j)-y0)**2)
+          if (dist < r0) then
+             b(i,j) = h1 * (1.d0 - dist/r0)
+          else
+             b(i,j) = 0.d0
+          end if
+       end do
+    end do
+  end subroutine init_topography
 
   !$FAD SKIP
   subroutine analytic_height(ha, x, y, t)
@@ -107,8 +128,8 @@ contains
        do i=1,nx
           ip1 = mod(i,nx)+1
           im1 = mod(i-2+nx,nx)+1
-          h_e = h(i,j)
-          h_w = h(im1,j)
+          h_e = h(i,j) + b(i,j)
+          h_w = h(im1,j) + b(im1,j)
           v_avg = 0.25d0*(v(im1,j) + v(im1,j+1) + v(i,j) + v(i,j+1))
           dudt(i,j) = - u(i,j) * (u(ip1,j) - u(im1,j)) / (2.d0*dx) &
                       - v_avg * (u(i,jp1) - u(i,jm1)) / (2.d0*dy) &
@@ -124,8 +145,8 @@ contains
        do i=1,nx
           ip1 = mod(i,nx)+1
           im1 = mod(i-2+nx,nx)+1
-          h_n = h(i,j)
-          h_s = h(i,jm1)
+          h_n = h(i,j) + b(i,j)
+          h_s = h(i,jm1) + b(i,jm1)
           u_avg = 0.25d0*(u(i,jm1) + u(ip1,jm1) + u(i,j) + u(ip1,j))
           dvdt(i,j) = - u_avg * (v(ip1,j) - v(im1,j)) / (2.d0*dx) &
                       - v(i,j) * (v(i,jp1) - v(i,jm1)) / (2.d0*dy) &

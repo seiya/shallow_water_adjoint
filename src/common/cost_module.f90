@@ -1,7 +1,9 @@
 module cost_module
   use constants_module, only: dp
+  use variables_module, only: g
   implicit none
   real(dp), save :: reference_mass = -1.d0
+  real(dp), save :: reference_energy = -1.d0
 contains
 
   !> Compute sum of squared errors between numerical and analytic heights
@@ -24,6 +26,40 @@ contains
        residual = current_mass - reference_mass
     end if
   end function calc_mass_residual
+
+  !> Compute deviation from the initial total energy
+  function calc_energy_residual(height, u, v) result(residual)
+    real(dp), intent(in) :: height(:,:), u(:,:), v(:,:)
+    real(dp) :: residual, current_energy
+    current_energy = sum(0.5d0*g*height**2 + 0.5d0*height*(u**2 + v(:,1:size(height,2))**2))
+    if (reference_energy < 0.d0) then
+       reference_energy = current_energy
+       residual = 0.d0
+    else
+       residual = current_energy - reference_energy
+    end if
+  end function calc_energy_residual
+
+  !> Measure wave pattern energy as variance from zonal mean
+  !$FAD SKIP
+  function calc_wave_pattern(height) result(pattern)
+    real(dp), intent(in) :: height(:,:)
+    real(dp) :: pattern
+    real(dp), allocatable :: zonal_mean(:)
+    integer :: nx, ny, i, j
+    nx = size(height,1)
+    ny = size(height,2)
+    allocate(zonal_mean(ny))
+    zonal_mean = sum(height,dim=1)/nx
+    pattern = 0.d0
+    do j = 1, ny
+       do i = 1, nx
+          pattern = pattern + (height(i,j) - zonal_mean(j))**2
+       end do
+    end do
+    pattern = pattern / (nx*ny)
+    deallocate(zonal_mean)
+  end function calc_wave_pattern
 
   !> Compute L1, L2, and Linf error norms
   !$FAD CONSTANT_VARS: height_ana
