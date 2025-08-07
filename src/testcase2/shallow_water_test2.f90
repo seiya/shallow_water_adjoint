@@ -10,7 +10,7 @@ program shallow_water_test2
   real(dp) :: t, maxerr, l1err, l2err, mse, mass_res
   integer :: n
   character(len=256) :: carg
-  real(dp) :: un(1-ihalo:nx+ihalo,ny), vn(1-ihalo:nx+ihalo,ny+1)
+  real(dp) :: un(is:ie,ny), vn(is:ie,ny+1)
 
   call init_variables()
   call read_output_interval(output_interval)

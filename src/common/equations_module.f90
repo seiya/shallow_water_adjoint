@@ -1,14 +1,14 @@
 module equations_module
   use constants_module, only: dp
   use variables_module, only: nx, ny, Lx, Ly, dx, dy, g, radius, u0, f0, h0, h1, pi, b, &
-                               ihalo, exchange_halo_x
+                               ihalo, is, ie, exchange_halo_x
   implicit none
 contains
 
   !$FAD SKIP
   subroutine init_height(h, x, y, xoffset)
-    real(dp), intent(out) :: h(1-ihalo:nx+ihalo,ny)
-    real(dp), intent(in) :: x(1-ihalo:nx+ihalo), y(ny)
+    real(dp), intent(out) :: h(is:ie,ny)
+    real(dp), intent(in) :: x(is:ie), y(ny)
     real(dp), intent(in), optional :: xoffset
     real(dp) :: x0, y0, r0, dist
     integer :: i,j
@@ -20,7 +20,7 @@ contains
     r0 = radius/3.d0
     do j=1,ny
        do i=1,nx
-         h(i,j) = h0
+          h(i,j) = h0
           dist = sqrt( (x(i)-x0)**2 + (y(j)-y0)**2 )
           if (dist < r0) then
              h(i,j) = h0 + 0.5d0*h1*(1.d0+cos(pi*dist/r0))
@@ -32,8 +32,8 @@ contains
 
   !$FAD SKIP
   subroutine velocity_field(u, v, x, y)
-    real(dp), intent(out) :: u(1-ihalo:nx+ihalo,ny), v(1-ihalo:nx+ihalo,ny+1)
-    real(dp), intent(in) :: x(1-ihalo:nx+ihalo), y(ny)
+    real(dp), intent(out) :: u(is:ie,ny), v(is:ie,ny+1)
+    real(dp), intent(in) :: x(is:ie), y(ny)
     integer :: i,j
     do j = 1, ny
       do i = 1, nx
@@ -47,8 +47,8 @@ contains
 
   !$FAD SKIP
   subroutine init_topography(b, x, y)
-    real(dp), intent(out) :: b(1-ihalo:nx+ihalo,ny)
-    real(dp), intent(in) :: x(1-ihalo:nx+ihalo), y(ny)
+    real(dp), intent(out) :: b(is:ie,ny)
+    real(dp), intent(in) :: x(is:ie), y(ny)
     real(dp) :: x0, y0, r0, dist
     integer :: i,j
     x0 = 0.5d0*Lx
@@ -69,7 +69,7 @@ contains
 
   !$FAD CONSTANT_VARS: y
   subroutine init_geostrophic_height(h, y)
-    real(dp), intent(out) :: h(1-ihalo:nx+ihalo,ny)
+    real(dp), intent(out) :: h(is:ie,ny)
     real(dp), intent(in) :: y(ny)
     integer :: i, j
     real(dp), parameter :: coeff = f0 * u0 * radius / g
@@ -82,11 +82,10 @@ contains
   end subroutine init_geostrophic_height
 
   subroutine geostrophic_velocity(u, v, h)
-    real(dp), intent(out) :: u(1-ihalo:nx+ihalo,ny), v(1-ihalo:nx+ihalo,ny+1)
-    real(dp), intent(inout)  :: h(1-ihalo:nx+ihalo,ny)
+    real(dp), intent(out) :: u(is:ie,ny), v(is:ie,ny+1)
+    real(dp), intent(in)  :: h(is:ie,ny)
     integer :: i, j
     integer :: jp1, jm1
-    call exchange_halo_x(h)
     do j = 1, ny
        jp1 = min(j+1, ny)
        jm1 = max(j-1, 1)
@@ -108,23 +107,19 @@ contains
 
   !$FAD SKIP
   subroutine analytic_height(ha, x, y, t)
-    real(dp), intent(out) :: ha(1-ihalo:nx+ihalo,ny)
-    real(dp), intent(in) :: x(1-ihalo:nx+ihalo), y(ny), t
+    real(dp), intent(out) :: ha(is:ie,ny)
+    real(dp), intent(in) :: x(is:ie), y(ny), t
     call init_height(ha, x, y, t*u0)
   end subroutine analytic_height
 
   subroutine rhs(h, u, v, dhdt, dudt, dvdt, no_momentum_tendency)
-    real(dp), intent(inout) :: h(1-ihalo:nx+ihalo,ny), u(1-ihalo:nx+ihalo,ny), v(1-ihalo:nx+ihalo,ny+1)
-    real(dp), intent(out) :: dhdt(1-ihalo:nx+ihalo,ny)
-    real(dp), intent(out) :: dudt(1-ihalo:nx+ihalo,ny), dvdt(1-ihalo:nx+ihalo,ny+1)
+    real(dp), intent(in) :: h(is:ie,ny), u(is:ie,ny), v(is:ie,ny+1)
+    real(dp), intent(out) :: dhdt(is:ie,ny)
+    real(dp), intent(out) :: dudt(is:ie,ny), dvdt(is:ie,ny+1)
     logical, intent(in), optional :: no_momentum_tendency
     integer :: i,j,jp1,jm1
     real(dp) :: fe,fw,fn,fs,ue,uw,vn,vs
     real(dp) :: h_e, h_w, h_n, h_s, v_avg, u_avg
-
-    call exchange_halo_x(h)
-    call exchange_halo_x(u)
-    call exchange_halo_x(v)
 
     ! continuity equation
     do j=1,ny

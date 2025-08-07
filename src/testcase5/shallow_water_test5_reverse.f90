@@ -18,10 +18,10 @@ program shallow_water_test5_reverse
   real(dp) :: grad_dot_d
   integer :: n
   character(len=256) :: carg
-  real(dp), allocatable :: d(:,:)
-  real(dp) :: un(1-ihalo:nx+ihalo,ny), vn(1-ihalo:nx+ihalo,ny+1)
-  real(dp) :: un_ad(1-ihalo:nx+ihalo,ny), vn_ad(1-ihalo:nx+ihalo,ny+1)
-  real(dp) :: hgeo(1-ihalo:nx+ihalo,ny)
+  real(dp) :: d(is:ie,ny)
+  real(dp) :: un(is:ie,ny), vn(is:ie,ny+1)
+  real(dp) :: un_ad(is:ie,ny), vn_ad(is:ie,ny+1)
+  real(dp) :: hgeo(is:ie,ny)
 
   call init_variables()
   call read_output_interval(output_interval)
@@ -33,7 +33,6 @@ program shallow_water_test5_reverse
   else
      call init_geostrophic_height(hgeo, y)
   end if
-  allocate(d(nx,ny))
   if (command_argument_count() >= 3) then
      call get_command_argument(3, carg)
      call read_field(d, trim(carg))

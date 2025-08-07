@@ -15,8 +15,8 @@ program shallow_water_test2_forward
   real(dp) :: t_ad, mse_ad, mass_res_ad
   integer :: n
   character(len=256) :: carg
-  real(dp) :: un(1-ihalo:nx+ihalo,ny), vn(1-ihalo:nx+ihalo,ny+1)
-  real(dp) :: un_ad(1-ihalo:nx+ihalo,ny), vn_ad(1-ihalo:nx+ihalo,ny+1)
+  real(dp) :: un(is:ie,ny), vn(is:ie,ny+1)
+  real(dp) :: un_ad(is:ie,ny), vn_ad(is:ie,ny+1)
 
   call init_variables()
   call read_output_interval(output_interval)

@@ -15,9 +15,9 @@ program shallow_water_test5_forward
   real(dp) :: mass_res_ad, energy_res_ad
   integer :: n
   character(len=256) :: carg
-  real(dp) :: un(1-ihalo:nx+ihalo,ny), vn(1-ihalo:nx+ihalo,ny+1)
-  real(dp) :: un_ad(1-ihalo:nx+ihalo,ny), vn_ad(1-ihalo:nx+ihalo,ny+1)
-  real(dp) :: hgeo(1-ihalo:nx+ihalo,ny)
+  real(dp) :: un(is:ie,ny), vn(is:ie,ny+1)
+  real(dp) :: un_ad(is:ie,ny), vn_ad(is:ie,ny+1)
+  real(dp) :: hgeo(is:ie,ny)
 
   call init_variables()
   call init_variables_fwd_ad()

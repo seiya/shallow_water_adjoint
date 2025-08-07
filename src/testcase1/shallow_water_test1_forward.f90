@@ -14,8 +14,8 @@ program shallow_water_test1_forward
   real(dp) :: t_ad, maxerr_ad, l1err_ad, l2err_ad, mse_ad, mass_res_ad
   integer :: n
   character(len=256) :: carg
-  real(dp) :: un(1-ihalo:nx+ihalo,ny), vn(1-ihalo:nx+ihalo,ny+1)
-  real(dp) :: un_ad(1-ihalo:nx+ihalo,ny), vn_ad(1-ihalo:nx+ihalo,ny+1)
+  real(dp) :: un(is:ie,ny), vn(is:ie,ny+1)
+  real(dp) :: un_ad(is:ie,ny), vn_ad(is:ie,ny+1)
 
   call init_variables()
   call read_output_interval(output_interval)
@@ -31,7 +31,9 @@ program shallow_water_test1_forward
      call get_command_argument(3, carg)
      call read_field(h_ad, trim(carg))
   else
-     h_ad(nx/2,ny/2) = 1.0_dp
+     h_ad(:,:) = 0.0_dp
+     h_ad(nx/2-1:nx/2+2,ny/2-1:ny/2+2) = 0.5_dp
+     h_ad(nx/2:nx/2+1,ny/2:ny/2+1) = 1.0_dp
   end if
   u_ad = 0.0_dp
   v_ad = 0.0_dp
