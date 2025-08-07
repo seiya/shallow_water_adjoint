@@ -21,6 +21,7 @@ program shallow_water_test5_reverse
   real(dp), allocatable :: d(:,:)
   real(dp) :: un(nx,ny), vn(nx,ny+1)
   real(dp) :: un_ad(nx,ny), vn_ad(nx,ny+1)
+  real(dp) :: hgeo(nx,ny)
 
   call init_variables()
   call read_output_interval(output_interval)
@@ -28,9 +29,9 @@ program shallow_water_test5_reverse
   call init_topography(b, x, y)
   if (command_argument_count() >= 2) then
      call get_command_argument(2, carg)
-     call read_field(h, trim(carg))
+     call read_field(hgeo, trim(carg))
   else
-     h = h0 - b
+     call init_geostrophic_height(hgeo, y)
   end if
   allocate(d(nx,ny))
   if (command_argument_count() >= 3) then
@@ -40,7 +41,8 @@ program shallow_water_test5_reverse
      d = 0.d0
   end if
 
-  call velocity_field(u, v, x, y)
+  call geostrophic_velocity(u, v, hgeo)
+  h = hgeo - b
   mass_res = calc_mass_residual(h)
   energy_res = calc_energy_residual(h, u, v)
   do n = 0, nsteps
@@ -83,10 +85,15 @@ program shallow_water_test5_reverse
      end if
      if (output_interval /= -1) then
         if (output_interval == 0) then
-           if (n == 0) call write_snapshot(n, h_ad, u, v)
+           if (n == 0) then
+              call geostrophic_velocity_rev_ad(u, u_ad, v, v_ad, hgeo, h_ad)
+              call write_snapshot(n, h_ad, u, v)
+           end if
         else if (mod(n, output_interval) == 0) then
            call write_snapshot(n, h_ad, u, v)
         end if
+     else if (n == 0) then
+        call geostrophic_velocity_rev_ad(u, u_ad, v, v_ad, hgeo, h_ad)
      end if
   end do
   grad_dot_d = sum(h_ad*d)
