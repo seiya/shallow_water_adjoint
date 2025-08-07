@@ -18,8 +18,8 @@ program shallow_water_test2_reverse
   integer :: n
   character(len=256) :: carg
   real(dp), allocatable :: d(:,:)
-  real(dp) :: un(nlon,nlat), vn(nlon,nlat+1)
-  real(dp) :: un_ad(nlon,nlat), vn_ad(nlon,nlat+1)
+  real(dp) :: un(nx,ny), vn(nx,ny+1)
+  real(dp) :: un_ad(nx,ny), vn_ad(nx,ny+1)
 
   call init_variables()
   call read_output_interval(output_interval)
@@ -28,23 +28,23 @@ program shallow_water_test2_reverse
      call get_command_argument(3, carg)
      call read_field(h, trim(carg))
   else
-     call init_geostrophic_height(h, lon, lat)
+     call init_geostrophic_height(h, y)
   end if
   ha = h
-  allocate(d(nlon,nlat))
+  allocate(d(nx,ny))
   if (command_argument_count() >= 4) then
      call get_command_argument(4, carg)
      call read_field(d, trim(carg))
   else
      d = 0.0_dp
   end if
-  call geostrophic_velocity(u, v, lat)
+  call geostrophic_velocity(u, v, h)
   do n = 0, nsteps
      call fautodiff_stack_push_r(h)
      call fautodiff_stack_push_r(u)
      call fautodiff_stack_push_r(v)
      if (n == nsteps) exit
-     call rk4_step(h, u, v, hn, un, vn, lat)
+     call rk4_step(h, u, v, hn, un, vn)
      h = hn
      u = un
      v = vn
@@ -71,7 +71,7 @@ program shallow_water_test2_reverse
         h_ad = 0.0_dp
         u_ad = 0.0_dp
         v_ad = 0.0_dp
-        call rk4_step_rev_ad(h, h_ad, u, u_ad, v, v_ad, hn_ad, un_ad, vn_ad, lat)
+        call rk4_step_rev_ad(h, h_ad, u, u_ad, v, v_ad, hn_ad, un_ad, vn_ad)
      end if
      if (output_interval /= -1) then
         if (output_interval == 0) then
@@ -89,31 +89,42 @@ program shallow_water_test2_reverse
 
 contains
 
-  subroutine init_geostrophic_height(h, lon, lat)
-    real(dp), intent(out) :: h(nlon,nlat)
-    real(dp), intent(in) :: lon(nlon), lat(nlat)
-    real(dp), parameter :: u0 = 20.d0
-    real(dp) :: coeff
+  subroutine init_geostrophic_height(h, y)
+    real(dp), intent(out) :: h(nx,ny)
+    real(dp), intent(in) :: y(ny)
     integer :: i, j
-    coeff = radius*omega*u0/g
-    do j = 1, nlat
-       do i = 1, nlon
-          h(i,j) = h0 - coeff * sin(lat(j))**2
+    real(dp), parameter :: coeff = f0 * u0 * radius / g
+    do j = 1, ny
+       do i = 1, nx
+          h(i,j) = h0 - coeff * sin(y(j)/radius)
        end do
     end do
   end subroutine init_geostrophic_height
 
-  subroutine geostrophic_velocity(u, v, lat)
-    real(dp), intent(out) :: u(nlon,nlat), v(nlon,nlat+1)
-    real(dp), intent(in) :: lat(nlat)
-    real(dp), parameter :: u0 = 20.d0
+  subroutine geostrophic_velocity(u, v, h)
+    real(dp), intent(out) :: u(nx,ny), v(nx,ny+1)
+    real(dp), intent(in) :: h(nx,ny)
     integer :: i, j
-    do j = 1, nlat
-       do i = 1, nlon
-          u(i,j) = u0 * cos(lat(j))
+    integer :: ip1, im1, jp1, jm1
+
+    do j = 1, ny
+       jp1 = min(j+1, ny)
+       jm1 = max(j-1, 1)
+       do i = 1, nx
+          im1 = mod(i-2+nx, nx) + 1
+          u(i,j) = - g / f0 * ((h(im1,jp1) + h(i,jp1)) - (h(im1,jm1) + h(i,jm1))) / (4.0d0 * dy)
        end do
     end do
-    v = 0.d0
+    do j = 2, ny
+       jm1 = j - 1
+       do i = 1, nx
+          ip1 = mod(i, nx) + 1
+          im1 = mod(i-2+nx, nx) + 1
+          v(i,j) = g / f0 * ((h(ip1,jm1) + h(ip1,j)) - (h(im1,jm1) + h(im1,j))) / (4.0d0 * dx)
+       end do
+    end do
+    v(:,1) = 0.0d0
+    v(:,ny+1) = 0.0d0
   end subroutine geostrophic_velocity
 
 end program shallow_water_test2_reverse

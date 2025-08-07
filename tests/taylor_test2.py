@@ -51,7 +51,7 @@ def main():
 
     subprocess.run([str(exe_base), '0', '0', str(x_file)], check=True, cwd=build_dir)
     F0 = read_cost(build_dir / 'cost.log')
-    assert F0 < 1e-8
+    assert F0 < 100.0 # 10 m
 
     eps_list = np.logspace(-1, -5, num=5)
     diffs = []

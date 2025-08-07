@@ -9,7 +9,7 @@ contains
   function calc_mse(height_num, height_ana) result(mse)
     real(dp), intent(in) :: height_num(:,:), height_ana(:,:)
     real(dp) :: mse
-    mse = sum((height_num - height_ana)**2)
+    mse = sum((height_num - height_ana)**2) / (size(height_ana))
   end function calc_mse
 
   !> Compute deviation from the initial total mass
@@ -26,33 +26,30 @@ contains
   end function calc_mass_residual
 
   !> Compute L1, L2, and Linf error norms
-  !$FAD CONSTANT_VARS: height_ana, lat
-  subroutine calc_error_norms(height_num, height_ana, lat, l1err, l2err, maxerr)
-    real(dp), intent(in) :: height_num(:,:), height_ana(:,:), lat(:)
+  !$FAD CONSTANT_VARS: height_ana
+  subroutine calc_error_norms(height_num, height_ana, l1err, l2err, maxerr)
+    real(dp), intent(in) :: height_num(:,:), height_ana(:,:)
     real(dp), intent(out) :: l1err, l2err, maxerr
-    integer :: i, j, nlon, nlat
-    real(dp) :: err, w, wtsum
+    integer :: i, j, nx, ny
+    real(dp) :: err
 
-    nlon = size(height_num, 1)
-    nlat = size(height_num, 2)
+    nx = size(height_num, 1)
+    ny = size(height_num, 2)
     maxerr = 0.d0
     l1err = 0.d0
     l2err = 0.d0
-    wtsum = 0.d0
 
-    do j = 1, nlat
-       w = cos(lat(j))
-       wtsum = wtsum + w
-       do i = 1, nlon
+    do j = 1, ny
+       do i = 1, nx
           err = height_num(i,j) - height_ana(i,j)
           maxerr = max(maxerr, abs(err))
-          l1err = l1err + abs(err)*w
-          l2err = l2err + err*err*w
+          l1err = l1err + abs(err)
+          l2err = l2err + err*err
        end do
     end do
 
-    l1err = l1err/(nlon*wtsum)
-    l2err = sqrt(l2err/(nlon*wtsum))
+    l1err = l1err / (nx * ny)
+    l2err = sqrt(l2err / (nx * ny))
   end subroutine calc_error_norms
 
   !> Evaluate inner product of gradients with perturbation directions
