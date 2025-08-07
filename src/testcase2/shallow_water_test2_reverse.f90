@@ -24,16 +24,16 @@ program shallow_water_test2_reverse
   call init_variables()
   call read_output_interval(output_interval)
   call write_grid_params()
-  if (command_argument_count() >= 3) then
-     call get_command_argument(3, carg)
+  if (command_argument_count() >= 2) then
+     call get_command_argument(2, carg)
      call read_field(h, trim(carg))
   else
      call init_geostrophic_height(h, y)
   end if
   ha = h
   allocate(d(nx,ny))
-  if (command_argument_count() >= 4) then
-     call get_command_argument(4, carg)
+  if (command_argument_count() >= 3) then
+     call get_command_argument(3, carg)
      call read_field(d, trim(carg))
   else
      d = 0.0_dp

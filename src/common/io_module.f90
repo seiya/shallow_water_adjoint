@@ -20,8 +20,8 @@ contains
   subroutine read_output_interval(interval)
     integer, intent(inout) :: interval
     character(len=32) :: carg
-    if (command_argument_count() >= 2) then
-       call get_command_argument(2,carg)
+    if (command_argument_count() >= 1) then
+       call get_command_argument(1,carg)
        read(carg,*) interval
     end if
   end subroutine read_output_interval

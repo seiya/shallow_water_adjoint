@@ -23,16 +23,16 @@ program shallow_water_test2_forward
   call write_grid_params()
   call init_variables_fwd_ad()
   ha = 0.0_dp
-  if (command_argument_count() >= 3) then
-     call get_command_argument(3, carg)
+  if (command_argument_count() >= 2) then
+     call get_command_argument(2, carg)
      call read_field(h, trim(carg))
      ha = h
   else
      call init_geostrophic_height_fwd_ad(h, h_ad, y)
      ha = h
   end if
-  if (command_argument_count() >= 4) then
-     call get_command_argument(4, carg)
+  if (command_argument_count() >= 3) then
+     call get_command_argument(3, carg)
      call read_field(h_ad, trim(carg))
   else
      h_ad(nx/2-1:nx/2+2, ny/2-1:ny/2+2) = 0.5_dp
