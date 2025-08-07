@@ -1,19 +1,19 @@
 module rk4_module
   use constants_module, only: dp
-  use variables_module, only: nlon, nlat, dt
+  use variables_module, only: nx, ny, dt
   use equations_module, only: rhs
   implicit none
 contains
 
   !$FAD CONSTANT_VARS: no_momentum_tendency
   subroutine rk4_step(h,u,v,hn,un,vn,no_momentum_tendency)
-    real(dp), intent(in) :: h(nlon,nlat), u(nlon,nlat), v(nlon,nlat+1)
-    real(dp), intent(out) :: hn(nlon,nlat), un(nlon,nlat), vn(nlon,nlat+1)
+    real(dp), intent(in) :: h(nx,ny), u(nx,ny), v(nx,ny+1)
+    real(dp), intent(out) :: hn(nx,ny), un(nx,ny), vn(nx,ny+1)
     logical, intent(in), optional :: no_momentum_tendency
-    real(dp) :: k1h(nlon,nlat), k2h(nlon,nlat), k3h(nlon,nlat), k4h(nlon,nlat)
-    real(dp) :: k1u(nlon,nlat), k2u(nlon,nlat), k3u(nlon,nlat), k4u(nlon,nlat)
-    real(dp) :: k1v(nlon,nlat+1), k2v(nlon,nlat+1), k3v(nlon,nlat+1), k4v(nlon,nlat+1)
-    real(dp) :: htmp(nlon,nlat), utmp(nlon,nlat), vtmp(nlon,nlat+1)
+    real(dp) :: k1h(nx,ny), k2h(nx,ny), k3h(nx,ny), k4h(nx,ny)
+    real(dp) :: k1u(nx,ny), k2u(nx,ny), k3u(nx,ny), k4u(nx,ny)
+    real(dp) :: k1v(nx,ny+1), k2v(nx,ny+1), k3v(nx,ny+1), k4v(nx,ny+1)
+    real(dp) :: htmp(nx,ny), utmp(nx,ny), vtmp(nx,ny+1)
     logical :: skip_momentum
     skip_momentum = .false.
     if (present(no_momentum_tendency)) skip_momentum = no_momentum_tendency
@@ -30,7 +30,7 @@ contains
        un = u
        vn = v
        vn(:,1) = 0.d0
-       vn(:,nlat+1) = 0.d0
+       vn(:,ny+1) = 0.d0
        return
     end if
 
@@ -51,7 +51,7 @@ contains
     un = u + dt*(k1u + 2.d0*k2u + 2.d0*k3u + k4u)/6.d0
     vn = v + dt*(k1v + 2.d0*k2v + 2.d0*k3v + k4v)/6.d0
     vn(:,1) = 0.d0
-    vn(:,nlat+1) = 0.d0
+    vn(:,ny+1) = 0.d0
   end subroutine rk4_step
 
 end module rk4_module

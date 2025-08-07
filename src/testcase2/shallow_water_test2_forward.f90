@@ -15,8 +15,8 @@ program shallow_water_test2_forward
   real(dp) :: t_ad, mse_ad, mass_res_ad
   integer :: n
   character(len=256) :: carg
-  real(dp) :: un(nlon,nlat), vn(nlon,nlat+1)
-  real(dp) :: un_ad(nlon,nlat), vn_ad(nlon,nlat+1)
+  real(dp) :: un(nx,ny), vn(nx,ny+1)
+  real(dp) :: un_ad(nx,ny), vn_ad(nx,ny+1)
 
   call init_variables()
   call read_output_interval(output_interval)
@@ -28,16 +28,17 @@ program shallow_water_test2_forward
      call read_field(h, trim(carg))
      ha = h
   else
-     call init_geostrophic_height_fwd_ad(h, h_ad, lon, lat)
+     call init_geostrophic_height_fwd_ad(h, h_ad, y)
      ha = h
   end if
   if (command_argument_count() >= 4) then
      call get_command_argument(4, carg)
      call read_field(h_ad, trim(carg))
   else
-     h_ad(nlon/2, nlat/2) = 1.0_dp
+     h_ad(nx/2-1:nx/2+2, ny/2-1:ny/2+2) = 0.5_dp
+     h_ad(nx/2:nx/2+1, ny/2:ny/2+1) = 1.0_dp
   end if
-  call geostrophic_velocity_fwd_ad(u, u_ad, v, v_ad, lat)
+  call geostrophic_velocity_fwd_ad(u, u_ad, v, v_ad, h, h_ad)
   do n = 0, nsteps
      t = n*dt
      if (output_interval /= -1) then
@@ -48,9 +49,7 @@ program shallow_water_test2_forward
         end if
      end if
      if (n == nsteps) exit
-     call rk4_step_fwd_ad(h, h_ad, u, u_ad, v, v_ad, hn, hn_ad, un, un_ad, vn, vn_ad, lat)
-     !print *, minval(hn), maxval(hn), minval(un), maxval(un), minval(vn), maxval(vn)
-     print *, minval(hn_ad), maxval(hn_ad), minval(un_ad), maxval(un_ad), minval(vn_ad), maxval(vn_ad)
+     call rk4_step_fwd_ad(h, h_ad, u, u_ad, v, v_ad, hn, hn_ad, un, un_ad, vn, vn_ad)
      h = hn
      u = un
      v = vn
@@ -68,67 +67,52 @@ program shallow_water_test2_forward
 
 contains
 
-  subroutine init_geostrophic_height_fwd_ad(h, h_ad, lon, lat)
-    real(dp), intent(out) :: h(nlon,nlat)
-    real(dp), intent(out) :: h_ad(nlon,nlat)
-    real(dp), intent(in)  :: lon(nlon)
-    real(dp), intent(in)  :: lat(nlat)
-    real(dp), parameter :: u0 = 20.d0
-    real(dp) :: coeff
+  subroutine init_geostrophic_height_fwd_ad(h, h_ad, y)
+    real(dp), intent(out) :: h(nx,ny)
+    real(dp), intent(out) :: h_ad(nx,ny)
+    real(dp), intent(in)  :: y(ny)
     integer :: i, j
-    coeff = radius*omega*u0/g
-    do j = 1, nlat
-       do i = 1, nlon
+    real(dp), parameter :: coeff = f0 * u0 * radius / g
+   do j = 1, ny
+       do i = 1, nx
           h_ad(i,j) = 0.0_dp
-          h(i,j) = h0 - coeff * sin(lat(j))**2
+          h(i,j) = h0 - coeff * sin(y(j)/radius)
        end do
     end do
   end subroutine init_geostrophic_height_fwd_ad
 
-  subroutine geostrophic_velocity_fwd_ad(u, u_ad, v, v_ad, lat)
-    real(dp), intent(out) :: u(nlon,nlat)
-    real(dp), intent(out) :: u_ad(nlon,nlat)
-    real(dp), intent(out) :: v(nlon,nlat+1)
-    real(dp), intent(out) :: v_ad(nlon,nlat+1)
-    real(dp), intent(in)  :: lat(nlat)
-    real(dp), parameter :: u0 = 20.d0
-    integer :: i, j, ip1, im1, jp1, jm1
-    real(dp) :: fcor
-    real(dp) :: fcor_eff
-    real(dp), parameter :: eps = 1.0e-6_dp
+    subroutine geostrophic_velocity_fwd_ad(u, u_ad, v, v_ad, h, h_ad)
+    real(dp), intent(out) :: u(nx,ny)
+    real(dp), intent(out) :: u_ad(nx,ny)
+    real(dp), intent(out) :: v(nx,ny+1)
+    real(dp), intent(out) :: v_ad(nx,ny+1)
+    real(dp), intent(in) :: h(nx,ny)
+    real(dp), intent(in) :: h_ad(nx,ny)
+    integer :: i, j
+    integer :: ip1, im1, jp1, jm1
 
-    do j = 1, nlat
-       do i = 1, nlon
-          u(i,j) = u0 * cos(lat(j))
+    do j = 1, ny
+       jp1 = min(j+1, ny)
+       jm1 = max(j-1, 1)
+       do i = 1, nx
+          im1 = mod(i-2+nx, nx) + 1
+          u_ad(i,j) = - g / f0 * ((h_ad(im1,jp1) + h_ad(i,jp1)) - (h_ad(im1,jm1) + h_ad(i,jm1))) / (4.0d0 * dy)
+          u(i,j) = - g / f0 * ((h(im1,jp1) + h(i,jp1)) - (h(im1,jm1) + h(i,jm1))) / (4.0d0 * dy)
        end do
     end do
-    v = 0.d0
-
-    u_ad = 0.d0
-    do j = 2, nlat-1
-       jp1 = j + 1
+    do j = 2, ny
        jm1 = j - 1
-       fcor = 2.d0*omega*sin(lat(j))
-       fcor_eff = sign(max(abs(fcor), eps), fcor)
-       do i = 1, nlon
-          u_ad(i,j) = -(g/fcor_eff) * (h_ad(i,jp1) - h_ad(i,jm1)) / &
-                       & (2.d0*dlat*radius)
+       do i = 1, nx
+          ip1 = mod(i, nx) + 1
+          im1 = mod(i-2+nx, nx) + 1
+          v_ad(i,j) = g / f0 * ((h_ad(ip1,jm1) + h_ad(ip1,j)) - (h_ad(im1,jm1) + h_ad(im1,j))) / (4.0d0 * dx)
+          v(i,j) = g / f0 * ((h(ip1,jm1) + h(ip1,j)) - (h(im1,jm1) + h(im1,j))) / (4.0d0 * dx)
        end do
     end do
-
-    v_ad = 0.d0
-    do j = 2, nlat
-       fcor = 2.d0*omega*sin(lat(j))
-       fcor_eff = sign(max(abs(fcor), eps), fcor)
-       do i = 1, nlon
-          ip1 = mod(i, nlon) + 1
-          im1 = mod(i-2 + nlon, nlon) + 1
-          v_ad(i,j) = (g/fcor_eff) * (h_ad(ip1,j) - h_ad(im1,j)) / &
-                       & (2.d0*dlon*radius*cos(lat(j)))
-       end do
-    end do
-    v_ad(:,1) = 0.d0
-    v_ad(:,nlat+1) = 0.d0
+    v_ad(:,1) = 0.0d0
+    v_ad(:,ny+1) = 0.0d0
+    v(:,1) = 0.0d0
+    v(:,ny+1) = 0.0d0
   end subroutine geostrophic_velocity_fwd_ad
 
 end program shallow_water_test2_forward

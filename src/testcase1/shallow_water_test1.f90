@@ -9,7 +9,7 @@ program shallow_water_test1
 
   real(dp) :: t, maxerr, l1err, l2err, alpha, mse, mass_res
   integer :: n
-  real(dp) :: un(nlon,nlat), vn(nlon,nlat+1)
+  real(dp) :: un(nx,ny), vn(nx,ny+1)
   character(len=256) :: carg
 
   call init_variables()
@@ -20,15 +20,15 @@ program shallow_water_test1
      call get_command_argument(3, carg)
      call read_field(h, trim(carg))
   else
-     call init_height(h, lon, lat)
+     call init_height(h, x, y)
   end if
   mass_res = calc_mass_residual(h)
-  call velocity_field(u, v, lon, lat, alpha)
+  call velocity_field(u, v, x, y)
   call open_error_file()
   do n = 0, nsteps
      t = n*dt
-     call analytic_height(ha, lon, lat, t, alpha)
-     call calc_error_norms(h, ha, lat, l1err, l2err, maxerr)
+     call analytic_height(ha, x, y, t)
+     call calc_error_norms(h, ha, l1err, l2err, maxerr)
      call write_error(t, l1err, l2err, maxerr)
      if (output_interval /= -1) then
         if (output_interval == 0) then
@@ -38,7 +38,7 @@ program shallow_water_test1
         end if
      end if
      if (n == nsteps) exit
-     call rk4_step(h, u, v, hn, un, vn, lat, no_momentum_tendency=.true.)
+     call rk4_step(h, u, v, hn, un, vn, no_momentum_tendency=.true.)
      h = hn
   end do
   call close_error_file()

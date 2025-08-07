@@ -14,8 +14,8 @@ program shallow_water_test1_forward
   real(dp) :: t_ad, maxerr_ad, l1err_ad, l2err_ad, mse_ad, mass_res_ad
   integer :: n
   character(len=256) :: carg
-  real(dp) :: un(nlon,nlat), vn(nlon,nlat+1)
-  real(dp) :: un_ad(nlon,nlat), vn_ad(nlon,nlat+1)
+  real(dp) :: un(nx,ny), vn(nx,ny+1)
+  real(dp) :: un_ad(nx,ny), vn_ad(nx,ny+1)
 
   call init_variables()
   call read_alpha(alpha)
@@ -26,17 +26,17 @@ program shallow_water_test1_forward
      call get_command_argument(3, carg)
      call read_field(h, trim(carg))
   else
-     call init_height(h, lon, lat)
+     call init_height(h, x, y)
   end if
   if (command_argument_count() >= 4) then
      call get_command_argument(4, carg)
      call read_field(h_ad, trim(carg))
   else
-     h_ad(nlon/2,nlat/2) = 1.0_dp
+     h_ad(nx/2,ny/2) = 1.0_dp
   end if
   u_ad = 0.0_dp
   v_ad = 0.0_dp
-  call velocity_field_fwd_ad(u, u_ad, v, v_ad, lon, lat, alpha)
+  call velocity_field(u, v, x, y)
   do n = 0, nsteps
      t = n*dt
      if (output_interval /= -1) then
@@ -47,12 +47,12 @@ program shallow_water_test1_forward
         end if
      end if
      if (n == nsteps) exit
-     call rk4_step_fwd_ad(h, h_ad, u, u_ad, v, v_ad, hn, hn_ad, un, un_ad, vn, vn_ad, lat, no_momentum_tendency=.true.)
+     call rk4_step_fwd_ad(h, h_ad, u, u_ad, v, v_ad, hn, hn_ad, un, un_ad, vn, vn_ad, no_momentum_tendency=.true.)
      h_ad = hn_ad
      h = hn
   end do
   t = nsteps*dt
-  call analytic_height(ha, lon, lat, t, alpha)
+  call analytic_height(ha, x, y, t)
   call calc_mse_fwd_ad(h, h_ad, ha, mse, mse_ad)
   call calc_mass_residual_fwd_ad(h, h_ad, mass_res, mass_res_ad)
   call write_cost_log(mse, mass_res)

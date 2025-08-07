@@ -1,13 +1,16 @@
 module variables_module
   use constants_module, only: dp, sp
   implicit none
-  integer, parameter :: nlon=128, nlat=64
+  integer, parameter :: nx=128, ny=64
   real(dp), parameter :: pi=3.14159265358979323846d0
+  real(dp), parameter :: radius=6371220.d0
   real(dp), parameter :: g=9.80616d0
   real(dp), parameter :: day=86400.d0
-  real(dp), parameter :: Lx=2.d0*pi, Ly=1.d0
-  real(dp), parameter :: dx=Lx/nlon, dy=Ly/nlat
+  real(dp), parameter :: Lx=2.d0*pi*radius, Ly=pi*radius
+  real(dp), parameter :: dx=Lx/nx, dy=Ly/ny
   real(dp), parameter :: h0=10000.d0, h1=2000.d0
+  real(dp), parameter :: omega=2.0d0*pi/(12.d0*day)
+  real(dp), parameter :: u0 = omega * radius
   real(dp), parameter :: f0=1.0d-4
   real(dp), parameter :: dt=600.d0
   integer, parameter :: nsteps=nint(12.d0*day/dt)
@@ -20,20 +23,19 @@ module variables_module
   !$FAD CONSTANT_VARS: x, y
   !$FAD CONSTANT_VARS: ha
   !$FAD CONSTANT_VARS: hsp, usp, vsp
-  !$FAD CONSTANT_VARS: f0
 
 contains
 
   subroutine init_variables()
     integer :: i, j
-    allocate(x(nlon), y(nlat))
-    allocate(h(nlon,nlat), hn(nlon,nlat), ha(nlon,nlat))
-    allocate(u(nlon,nlat), v(nlon,nlat+1))
-    allocate(hsp(nlon,nlat), usp(nlon,nlat), vsp(nlon,nlat))
-    do i=1,nlon
+    allocate(x(nx), y(ny))
+    allocate(h(nx,ny), hn(nx,ny), ha(nx,ny))
+    allocate(u(nx,ny), v(nx,ny+1))
+    allocate(hsp(nx,ny), usp(nx,ny), vsp(nx,ny))
+    do i=1,nx
        x(i) = (i-0.5d0)*dx
     end do
-    do j=1,nlat
+    do j=1,ny
        y(j) = (j-0.5d0)*dy
     end do
   end subroutine init_variables

@@ -1,6 +1,6 @@
 module io_module
   use constants_module, only: dp, sp
-  use variables_module, only: nlon, nlat, day, pi, h, u, v, hsp, usp, vsp
+  use variables_module, only: nx, ny, day, pi, h, u, v, hsp, usp, vsp
   implicit none
 contains
   !$FAD SKIP
@@ -29,7 +29,7 @@ contains
   !$FAD SKIP
   subroutine read_field(field, filename)
     !! Read a two-dimensional field from a binary file.
-    real(dp), intent(out) :: field(nlon,nlat)
+    real(dp), intent(out) :: field(nx,ny)
     character(len=*), intent(in) :: filename
     open(unit=50,file=filename,form='unformatted',access='stream',status='old')
     read(50) field
@@ -39,7 +39,7 @@ contains
   !$FAD SKIP
   subroutine write_grid_params()
     open(unit=30,file='grid_params.txt',status='replace')
-    write(30,*) nlon, nlat
+    write(30,*) nx, ny
     close(30)
   end subroutine write_grid_params
 
@@ -62,12 +62,12 @@ contains
   !$FAD SKIP
   subroutine write_snapshot(n, h, u, v)
     integer, intent(in) :: n
-    real(dp), intent(in) :: h(nlon,nlat)
-    real(dp), intent(in) :: u(nlon,nlat), v(nlon,nlat+1)
+    real(dp), intent(in) :: h(nx,ny)
+    real(dp), intent(in) :: u(nx,ny), v(nx,ny+1)
     character(len=32) :: filename
     hsp = real(h,sp)
     usp = real(0.5d0*(u + cshift(u,1,dim=1)), sp)
-    vsp = real(0.5d0*(v(:,1:nlat) + v(:,2:nlat+1)), sp)
+    vsp = real(0.5d0*(v(:,1:ny) + v(:,2:ny+1)), sp)
     write(filename,'("snapshot_",i4.4,".bin")') n
     open(unit=20,file=filename,form='unformatted',access='stream',status='replace')
     write(20) hsp, usp, vsp

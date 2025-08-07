@@ -19,8 +19,8 @@ program shallow_water_test1_reverse
   integer :: n
   character(len=256) :: carg
   real(dp), allocatable :: d(:,:)
-  real(dp) :: un(nlon,nlat), vn(nlon,nlat+1)
-  real(dp) :: un_ad(nlon,nlat), vn_ad(nlon,nlat+1)
+  real(dp) :: un(nx,ny), vn(nx,ny+1)
+  real(dp) :: un_ad(nx,ny), vn_ad(nx,ny+1)
 
   call init_variables()
   call read_alpha(alpha)
@@ -30,9 +30,9 @@ program shallow_water_test1_reverse
      call get_command_argument(3, carg)
      call read_field(h, trim(carg))
   else
-     call init_height(h, lon, lat)
+     call init_height(h, x, y)
   end if
-  allocate(d(nlon,nlat))
+  allocate(d(nx,ny))
   if (command_argument_count() >= 4) then
      call get_command_argument(4, carg)
      call read_field(d, trim(carg))
@@ -40,17 +40,17 @@ program shallow_water_test1_reverse
      d = 0.0_dp
   end if
 
-  call velocity_field(u, v, lon, lat, alpha)
+  call velocity_field(u, v, x, y)
   do n = 0, nsteps
      call fautodiff_stack_push_r(h)
      call fautodiff_stack_push_r(u)
      call fautodiff_stack_push_r(v)
      if (n == nsteps) exit
-     call rk4_step(h, u, v, hn, un, vn, lat, no_momentum_tendency=.true.)
+     call rk4_step(h, u, v, hn, un, vn, no_momentum_tendency=.true.)
      h = hn
   end do
   t = nsteps*dt
-  call analytic_height(ha, lon, lat, t, alpha)
+  call analytic_height(ha, x, y, t)
   mse = calc_mse(h, ha)
   mass_res = calc_mass_residual(h)
 
@@ -75,7 +75,7 @@ program shallow_water_test1_reverse
         h_ad = 0.0_dp
         u_ad = 0.0_dp
         v_ad = 0.0_dp
-        call rk4_step_rev_ad(h, h_ad, u, u_ad, v, v_ad, hn_ad, un_ad, vn_ad, lat, no_momentum_tendency=.true.)
+        call rk4_step_rev_ad(h, h_ad, u, u_ad, v, v_ad, hn_ad, un_ad, vn_ad, no_momentum_tendency=.true.)
      end if
      if (output_interval /= -1) then
         if (output_interval == 0) then
@@ -85,8 +85,6 @@ program shallow_water_test1_reverse
         end if
      end if
   end do
-  !call velocity_field_rev_ad(u, u_ad, v, v_ad, lon, lat, alpha)
-  !call init_height_rev_ad(h, h_ad, lon, lat)
   grad_dot_d = sum(h_ad*d)
   print *, sum(h_ad), minval(h_ad), maxval(h_ad)
   print *, grad_dot_d
