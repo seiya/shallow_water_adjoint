@@ -32,10 +32,8 @@ program shallow_water_test2
      t = n*dt
      call calc_error_norms(h, ha, l1err, l2err, maxerr)
      call write_error(t, l1err, l2err, maxerr)
-     if (output_interval /= -1) then
-        if (output_interval == 0) then
-           if (n == nsteps) call write_snapshot(n, h, u, v)
-        else if (mod(n, output_interval) == 0) then
+     if (output_interval > 0) then
+        if (mod(n, output_interval) == 0) then
            call write_snapshot(n, h, u, v)
         end if
      end if
@@ -45,6 +43,9 @@ program shallow_water_test2
      u = un
      v = vn
   end do
+  if (output_interval == 0) then
+     call write_snapshot(nsteps, h, u, v)
+  end if
   call close_error_file()
   mse = calc_mse(h, ha)
   mass_res = calc_mass_residual(h)

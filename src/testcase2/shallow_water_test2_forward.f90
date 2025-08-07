@@ -35,16 +35,15 @@ program shallow_water_test2_forward
      call get_command_argument(3, carg)
      call read_field(h_ad, trim(carg))
   else
+     h_ad = 0.0_dp
      h_ad(nx/2-1:nx/2+2, ny/2-1:ny/2+2) = 0.5_dp
      h_ad(nx/2:nx/2+1, ny/2:ny/2+1) = 1.0_dp
   end if
   call geostrophic_velocity_fwd_ad(u, u_ad, v, v_ad, h, h_ad)
   do n = 0, nsteps
      t = n*dt
-     if (output_interval /= -1) then
-        if (output_interval == 0) then
-           if (n == nsteps) call write_snapshot(n, h_ad, u, v)
-        else if (mod(n, output_interval) == 0) then
+     if (output_interval > 0) then
+        if (mod(n, output_interval) == 0) then
            call write_snapshot(n, h_ad, u, v)
         end if
      end if
@@ -57,6 +56,9 @@ program shallow_water_test2_forward
      u_ad = un_ad
      v_ad = vn_ad
   end do
+  if (output_interval == 0) then
+     call write_snapshot(nsteps, h_ad, u, v)
+  end if
   mse = calc_mse(h, ha)
   mass_res = calc_mass_residual(h)
   call calc_mse_fwd_ad(h, h_ad, ha, mse, mse_ad)

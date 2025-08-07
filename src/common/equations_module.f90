@@ -48,7 +48,7 @@ contains
     real(dp) :: x0, y0, r0, dist
     integer :: i,j
     x0 = 0.5d0*Lx
-    y0 = 0.5d0*Ly
+    y0 = 0.75d0*Ly
     r0 = radius/4.d0
     do j=1,ny
        do i=1,nx
@@ -62,6 +62,7 @@ contains
     end do
   end subroutine init_topography
 
+  !$FAD CONSTANT_VARS: y
   subroutine init_geostrophic_height(h, y)
     real(dp), intent(out) :: h(nx,ny)
     real(dp), intent(in) :: y(ny)

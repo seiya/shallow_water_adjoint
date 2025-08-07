@@ -10,8 +10,8 @@ def main():
         "--test",
         type=int,
         default=1,
-        choices=[1, 2],
-        help="Taylor test number (1 or 2)",
+        choices=[1, 2, 5],
+        help="Taylor test number (1, 2, or 5)",
     )
     args = parser.parse_args()
 
