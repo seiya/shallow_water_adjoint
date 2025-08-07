@@ -19,8 +19,8 @@ program shallow_water_test1_reverse
   integer :: n
   character(len=256) :: carg
   real(dp), allocatable :: d(:,:)
-  real(dp) :: un(nx,ny), vn(nx,ny+1)
-  real(dp) :: un_ad(nx,ny), vn_ad(nx,ny+1)
+  real(dp) :: un(1-ihalo:nx+ihalo,ny), vn(1-ihalo:nx+ihalo,ny+1)
+  real(dp) :: un_ad(1-ihalo:nx+ihalo,ny), vn_ad(1-ihalo:nx+ihalo,ny+1)
 
   call init_variables()
   call read_output_interval(output_interval)

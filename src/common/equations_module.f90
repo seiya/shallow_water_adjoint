@@ -1,13 +1,14 @@
 module equations_module
   use constants_module, only: dp
-  use variables_module, only: nx, ny, Lx, Ly, dx, dy, g, radius, u0, f0, h0, h1, pi, b
+  use variables_module, only: nx, ny, Lx, Ly, dx, dy, g, radius, u0, f0, h0, h1, pi, b, &
+                               ihalo, exchange_halo_x
   implicit none
 contains
 
   !$FAD SKIP
   subroutine init_height(h, x, y, xoffset)
-    real(dp), intent(out) :: h(nx,ny)
-    real(dp), intent(in) :: x(nx), y(ny)
+    real(dp), intent(out) :: h(1-ihalo:nx+ihalo,ny)
+    real(dp), intent(in) :: x(1-ihalo:nx+ihalo), y(ny)
     real(dp), intent(in), optional :: xoffset
     real(dp) :: x0, y0, r0, dist
     integer :: i,j
@@ -19,19 +20,20 @@ contains
     r0 = radius/3.d0
     do j=1,ny
        do i=1,nx
-          h(i,j) = h0
+         h(i,j) = h0
           dist = sqrt( (x(i)-x0)**2 + (y(j)-y0)**2 )
           if (dist < r0) then
              h(i,j) = h0 + 0.5d0*h1*(1.d0+cos(pi*dist/r0))
           end if
        end do
     end do
+    call exchange_halo_x(h)
   end subroutine init_height
 
   !$FAD SKIP
   subroutine velocity_field(u, v, x, y)
-    real(dp), intent(out) :: u(nx,ny), v(nx,ny+1)
-    real(dp), intent(in) :: x(nx), y(ny)
+    real(dp), intent(out) :: u(1-ihalo:nx+ihalo,ny), v(1-ihalo:nx+ihalo,ny+1)
+    real(dp), intent(in) :: x(1-ihalo:nx+ihalo), y(ny)
     integer :: i,j
     do j = 1, ny
       do i = 1, nx
@@ -39,12 +41,14 @@ contains
       end do
     end do
     v(:,:) = 0.d0
+    call exchange_halo_x(u)
+    call exchange_halo_x(v)
   end subroutine velocity_field
 
   !$FAD SKIP
   subroutine init_topography(b, x, y)
-    real(dp), intent(out) :: b(nx,ny)
-    real(dp), intent(in) :: x(nx), y(ny)
+    real(dp), intent(out) :: b(1-ihalo:nx+ihalo,ny)
+    real(dp), intent(in) :: x(1-ihalo:nx+ihalo), y(ny)
     real(dp) :: x0, y0, r0, dist
     integer :: i,j
     x0 = 0.5d0*Lx
@@ -60,11 +64,12 @@ contains
           end if
        end do
     end do
+    call exchange_halo_x(b)
   end subroutine init_topography
 
   !$FAD CONSTANT_VARS: y
   subroutine init_geostrophic_height(h, y)
-    real(dp), intent(out) :: h(nx,ny)
+    real(dp), intent(out) :: h(1-ihalo:nx+ihalo,ny)
     real(dp), intent(in) :: y(ny)
     integer :: i, j
     real(dp), parameter :: coeff = f0 * u0 * radius / g
@@ -73,65 +78,68 @@ contains
           h(i,j) = h0 + coeff * sin(y(j)/radius)
        end do
     end do
+    call exchange_halo_x(h)
   end subroutine init_geostrophic_height
 
   subroutine geostrophic_velocity(u, v, h)
-    real(dp), intent(out) :: u(nx,ny), v(nx,ny+1)
-    real(dp), intent(in)  :: h(nx,ny)
+    real(dp), intent(out) :: u(1-ihalo:nx+ihalo,ny), v(1-ihalo:nx+ihalo,ny+1)
+    real(dp), intent(inout)  :: h(1-ihalo:nx+ihalo,ny)
     integer :: i, j
-    integer :: ip1, im1, jp1, jm1
+    integer :: jp1, jm1
+    call exchange_halo_x(h)
     do j = 1, ny
        jp1 = min(j+1, ny)
        jm1 = max(j-1, 1)
        do i = 1, nx
-          im1 = mod(i-2+nx, nx) + 1
-          u(i,j) = - g / f0 * ((h(im1,jp1) + h(i,jp1)) - (h(im1,jm1) + h(i,jm1))) / (4.0d0 * dy)
+          u(i,j) = - g / f0 * ((h(i-1,jp1) + h(i,jp1)) - (h(i-1,jm1) + h(i,jm1))) / (4.0d0 * dy)
        end do
     end do
     do j = 2, ny
        jm1 = j - 1
        do i = 1, nx
-          ip1 = mod(i, nx) + 1
-          im1 = mod(i-2+nx, nx) + 1
-          v(i,j) = g / f0 * ((h(ip1,jm1) + h(ip1,j)) - (h(im1,jm1) + h(im1,j))) / (4.0d0 * dx)
+          v(i,j) = g / f0 * ((h(i+1,jm1) + h(i+1,j)) - (h(i-1,jm1) + h(i-1,j))) / (4.0d0 * dx)
        end do
     end do
+    call exchange_halo_x(u)
+    call exchange_halo_x(v)
     v(:,1) = 0.0d0
     v(:,ny+1) = 0.0d0
   end subroutine geostrophic_velocity
 
   !$FAD SKIP
   subroutine analytic_height(ha, x, y, t)
-    real(dp), intent(out) :: ha(nx,ny)
-    real(dp), intent(in) :: x(nx), y(ny), t
+    real(dp), intent(out) :: ha(1-ihalo:nx+ihalo,ny)
+    real(dp), intent(in) :: x(1-ihalo:nx+ihalo), y(ny), t
     call init_height(ha, x, y, t*u0)
   end subroutine analytic_height
 
   subroutine rhs(h, u, v, dhdt, dudt, dvdt, no_momentum_tendency)
-    real(dp), intent(in) :: h(nx,ny), u(nx,ny), v(nx,ny+1)
-    real(dp), intent(out) :: dhdt(nx,ny)
-    real(dp), intent(out) :: dudt(nx,ny), dvdt(nx,ny+1)
+    real(dp), intent(inout) :: h(1-ihalo:nx+ihalo,ny), u(1-ihalo:nx+ihalo,ny), v(1-ihalo:nx+ihalo,ny+1)
+    real(dp), intent(out) :: dhdt(1-ihalo:nx+ihalo,ny)
+    real(dp), intent(out) :: dudt(1-ihalo:nx+ihalo,ny), dvdt(1-ihalo:nx+ihalo,ny+1)
     logical, intent(in), optional :: no_momentum_tendency
-    integer :: i,j,ip1,im1,jp1,jm1
+    integer :: i,j,jp1,jm1
     real(dp) :: fe,fw,fn,fs,ue,uw,vn,vs
     real(dp) :: h_e, h_w, h_n, h_s, v_avg, u_avg
+
+    call exchange_halo_x(h)
+    call exchange_halo_x(u)
+    call exchange_halo_x(v)
 
     ! continuity equation
     do j=1,ny
        jp1 = min(j+1,ny)
        jm1 = max(j-1,1)
        do i=1,nx
-          ip1 = mod(i,nx)+1
-          im1 = mod(i-2+nx,nx)+1
-          ue = u(ip1,j)
+          ue = u(i+1,j)
           uw = u(i,j)
           if (ue > 0.d0) then
              fe = ue * h(i,j)
           else
-             fe = ue * h(ip1,j)
+             fe = ue * h(i+1,j)
           end if
           if (uw > 0.d0) then
-             fw = uw * h(im1,j)
+             fw = uw * h(i-1,j)
           else
              fw = uw * h(i,j)
           end if
@@ -164,12 +172,10 @@ contains
        jp1 = min(j+1,ny)
        jm1 = max(j-1,1)
        do i=1,nx
-          ip1 = mod(i,nx)+1
-          im1 = mod(i-2+nx,nx)+1
           h_e = h(i,j) + b(i,j)
-          h_w = h(im1,j) + b(im1,j)
-          v_avg = 0.25d0*(v(im1,j) + v(im1,j+1) + v(i,j) + v(i,j+1))
-          dudt(i,j) = - u(i,j) * (u(ip1,j) - u(im1,j)) / (2.d0*dx) &
+          h_w = h(i-1,j) + b(i-1,j)
+          v_avg = 0.25d0*(v(i-1,j) + v(i-1,j+1) + v(i,j) + v(i,j+1))
+          dudt(i,j) = - u(i,j) * (u(i+1,j) - u(i-1,j)) / (2.d0*dx) &
                       - v_avg * (u(i,jp1) - u(i,jm1)) / (2.d0*dy) &
                       - g * (h_e - h_w) / dx &
                       + f0 * v_avg
@@ -181,12 +187,10 @@ contains
        jp1 = min(j+1,ny)
        jm1 = j-1
        do i=1,nx
-          ip1 = mod(i,nx)+1
-          im1 = mod(i-2+nx,nx)+1
           h_n = h(i,j) + b(i,j)
           h_s = h(i,jm1) + b(i,jm1)
-          u_avg = 0.25d0*(u(i,jm1) + u(ip1,jm1) + u(i,j) + u(ip1,j))
-          dvdt(i,j) = - u_avg * (v(ip1,j) - v(im1,j)) / (2.d0*dx) &
+          u_avg = 0.25d0*(u(i,jm1) + u(i+1,jm1) + u(i,j) + u(i+1,j))
+          dvdt(i,j) = - u_avg * (v(i+1,j) - v(i-1,j)) / (2.d0*dx) &
                       - v(i,j) * (v(i,jp1) - v(i,jm1)) / (2.d0*dy) &
                       - g * (h_n - h_s) / dy &
                       - f0 * u_avg

@@ -9,9 +9,9 @@ program shallow_water_test5
 
   real(dp) :: t, mass_res, energy_res, wave
   integer :: n
-  real(dp) :: un(nx,ny), vn(nx,ny+1)
+  real(dp) :: un(1-ihalo:nx+ihalo,ny), vn(1-ihalo:nx+ihalo,ny+1)
   character(len=256) :: carg
-  real(dp) :: hgeo(nx,ny)
+  real(dp) :: hgeo(1-ihalo:nx+ihalo,ny)
 
   call init_variables()
   call read_output_interval(output_interval)

@@ -1,6 +1,6 @@
 module cost_module
   use constants_module, only: dp
-  use variables_module, only: g
+  use variables_module, only: g, ihalo
   implicit none
   real(dp), save :: reference_mass = -1.d0
   real(dp), save :: reference_energy = -1.d0
@@ -11,14 +11,19 @@ contains
   function calc_mse(height_num, height_ana) result(mse)
     real(dp), intent(in) :: height_num(:,:), height_ana(:,:)
     real(dp) :: mse
-    mse = sum((height_num - height_ana)**2) / (size(height_ana))
+    integer :: nx, ny
+    nx = size(height_ana,1) - 2*ihalo
+    ny = size(height_ana,2)
+    mse = sum((height_num(1:nx,:) - height_ana(1:nx,:))**2) / (nx*ny)
   end function calc_mse
 
   !> Compute deviation from the initial total mass
   function calc_mass_residual(height) result(residual)
     real(dp), intent(in) :: height(:,:)
     real(dp) :: residual, current_mass
-    current_mass = sum(height)
+    integer :: nx
+    nx = size(height,1) - 2*ihalo
+    current_mass = sum(height(1:nx,:))
     if (reference_mass < 0.d0) then
        reference_mass = current_mass
        residual = 0.d0
@@ -31,7 +36,11 @@ contains
   function calc_energy_residual(height, u, v) result(residual)
     real(dp), intent(in) :: height(:,:), u(:,:), v(:,:)
     real(dp) :: residual, current_energy
-    current_energy = sum(0.5d0*g*height**2 + 0.5d0*height*(u**2 + v(:,1:size(height,2))**2))
+    integer :: nx, ny
+    nx = size(height,1) - 2*ihalo
+    ny = size(height,2)
+    current_energy = sum(0.5d0*g*height(1:nx,1:ny)**2 + &
+                         0.5d0*height(1:nx,1:ny)*(u(1:nx,1:ny)**2 + v(1:nx,1:ny)**2))
     if (reference_energy < 0.d0) then
        reference_energy = current_energy
        residual = 0.d0
@@ -47,10 +56,10 @@ contains
     real(dp) :: pattern
     real(dp), allocatable :: zonal_mean(:)
     integer :: nx, ny, i, j
-    nx = size(height,1)
+    nx = size(height,1) - 2*ihalo
     ny = size(height,2)
     allocate(zonal_mean(ny))
-    zonal_mean = sum(height,dim=1)/nx
+    zonal_mean = sum(height(1:nx,:),dim=1)/nx
     pattern = 0.d0
     do j = 1, ny
        do i = 1, nx
@@ -69,7 +78,7 @@ contains
     integer :: i, j, nx, ny
     real(dp) :: err
 
-    nx = size(height_num, 1)
+    nx = size(height_num, 1) - 2*ihalo
     ny = size(height_num, 2)
     maxerr = 0.d0
     l1err = 0.d0
