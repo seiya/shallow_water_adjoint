@@ -75,7 +75,7 @@ contains
     real(dp), parameter :: coeff = f0 * u0 * radius / g
     do j = 1, ny
        do i = 1, nx
-          h(i,j) = h0 + coeff * sin(y(j)/radius)
+          h(i,j) = h0 + coeff * sin(y(j)/radius)**2
        end do
     end do
     call exchange_halo_x(h)

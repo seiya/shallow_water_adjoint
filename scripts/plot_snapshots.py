@@ -37,6 +37,7 @@ for fname in sorted(glob.glob('snapshot_*.bin')):
     h = data[0:npts].reshape((nlon, nlat), order='F')
     u = data[npts:2*npts].reshape((nlon, nlat), order='F')
     v = data[2*npts:].reshape((nlon, nlat), order='F')
+    print(f"{fname}: h {h.min():.0f} - {h.max():.0f}, u {u.min():.2f} - {u.max():.2f}, v {v.min():.2f} - {v.max():.2f}")
 
     fig, ax = plt.subplots(figsize=(8, 4))
     cs = ax.pcolormesh(lon_deg, lat_deg, h.T, shading='auto')
