@@ -80,6 +80,7 @@ def main():
     lines = res.stdout.strip().splitlines()
     grad_dot_d = float(lines[-1].split()[0])
 
+    print(energy_ad, grad_dot_d)
     fwd_err = np.abs(energy_ad - diffs)
     rev_err = np.abs(grad_dot_d - diffs)
 

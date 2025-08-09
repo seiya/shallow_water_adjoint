@@ -17,7 +17,7 @@ def read_cost(path):
     raise RuntimeError('MSE not found')
 
 
-def geostrophic_height(nlon, nlat):
+def geostrophic_height(nx, ny):
     pi = np.pi
     radius = 6371220.0
     g = 9.80616
@@ -25,11 +25,11 @@ def geostrophic_height(nlon, nlat):
     omega = 2.0 * pi / (12.0 * day)
     h0 = 10000.0
     u0 = 20.0
-    dlat = pi / nlat
-    lat = -pi/2 + (np.arange(nlat) + 0.5) * dlat
+    dlat = pi / ny
+    lat = -pi/2 + (np.arange(ny) + 0.5) * dlat
     coeff = radius * omega * u0 / g
     hlat = h0 + coeff * np.sin(lat) ** 2
-    return np.repeat(hlat[np.newaxis, :], nlon, axis=0)
+    return np.repeat(hlat[np.newaxis, :], nx, axis=0)
 
 
 def main():
@@ -38,10 +38,10 @@ def main():
     exe_fwd = build_dir / 'shallow_water_test2_forward.out'
     exe_rev = build_dir / 'shallow_water_test2_reverse.out'
 
-    nlon, nlat = 128, 64
+    nx, ny = 128, 64
     rng = np.random.default_rng(0)
-    x = geostrophic_height(nlon, nlat)
-    d = rng.standard_normal((nlon, nlat))
+    x = geostrophic_height(nx, ny)
+    d = rng.standard_normal((nx, ny))
 
     x_file = build_dir / 'x2.bin'
     d_file = build_dir / 'd2.bin'

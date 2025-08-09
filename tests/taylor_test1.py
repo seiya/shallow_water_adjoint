@@ -20,10 +20,10 @@ def main():
     exe_fwd = build_dir / 'shallow_water_test1_forward.out'
     exe_rev = build_dir / 'shallow_water_test1_reverse.out'
 
-    nlon, nlat = 128, 64
+    nx, ny = 128, 64
     rng = np.random.default_rng(0)
-    x = rng.standard_normal((nlon, nlat))
-    d = rng.standard_normal((nlon, nlat))
+    x = rng.standard_normal((nx, ny))
+    d = rng.standard_normal((nx, ny))
 
     x_file = build_dir / 'x.bin'
     d_file = build_dir / 'd.bin'

@@ -4,18 +4,6 @@ module io_module
                               ihalo, is, ie, exchange_halo_x
   implicit none
 contains
-  !$FAD SKIP
-  subroutine read_alpha(alpha)
-    real(dp), intent(out) :: alpha
-    character(len=32) :: carg
-    if (command_argument_count() >= 1) then
-       call get_command_argument(1,carg)
-       read(carg,*) alpha
-    else
-       alpha = 0.d0
-    end if
-    alpha = alpha*pi/180.d0
-  end subroutine read_alpha
 
   !$FAD SKIP
   subroutine read_output_interval(interval)
