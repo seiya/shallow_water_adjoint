@@ -44,7 +44,7 @@ program shallow_water_test2_forward
      t = n*dt
      if (output_interval > 0) then
         if (mod(n, output_interval) == 0) then
-           call write_snapshot(n, h_ad, u, v)
+           call write_snapshot(n, h_ad, u_ad, v_ad)
         end if
      end if
      if (n == nsteps) exit
@@ -57,7 +57,7 @@ program shallow_water_test2_forward
      v_ad = vn_ad
   end do
   if (output_interval == 0) then
-     call write_snapshot(nsteps, h_ad, u, v)
+     call write_snapshot(nsteps, h_ad, u_ad, v_ad)
   end if
   mse = calc_mse(h, ha)
   mass_res = calc_mass_residual(h)
