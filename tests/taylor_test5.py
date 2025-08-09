@@ -28,7 +28,7 @@ def init_height(nlon, nlat):
     x = (np.arange(nlon) + 0.5) * dx
     y = (np.arange(nlat) + 0.5) * dy
     x0 = 0.5 * Lx
-    y0 = 0.5 * Ly
+    y0 = 0.75 * Ly
     r0 = radius / 4.0
     b = np.zeros((nlon, nlat))
     for j in range(nlat):
