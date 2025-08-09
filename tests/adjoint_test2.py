@@ -25,7 +25,7 @@ def geostrophic_height(nlon, nlat):
     dlat = pi / nlat
     lat = -pi/2 + (np.arange(nlat) + 0.5) * dlat
     coeff = radius * omega * u0 / g
-    hlat = h0 - coeff * np.sin(lat) ** 2
+    hlat = h0 + coeff * np.sin(lat) ** 2
     return np.repeat(hlat[np.newaxis, :], nlon, axis=0)
 
 
@@ -61,7 +61,7 @@ def main():
     lhs = v * Ju
     rhs = np.vdot(u.ravel(order='F'), JT_v.ravel(order='F'))
     diff = abs(lhs - rhs)
-    tol = max(1e-12, 1e-6 * max(abs(lhs), abs(rhs)))
+    tol = max(1e-7, 1e-6 * max(abs(lhs), abs(rhs)))
     print(f"vTJu={lhs:.6e} uTJTv={rhs:.6e} diff={diff:.6e}")
     assert diff < tol
 

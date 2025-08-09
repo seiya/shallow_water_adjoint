@@ -17,26 +17,22 @@ def read_energy_cost(path):
     raise RuntimeError('EnergyResidual not found')
 
 
-def init_height(nlon, nlat):
+def init_height(nx, ny):
+    pi = np.pi
     radius = 6371220.0
+    g = 9.80616
+    day = 86400.0
+    omega=2.0*pi/(12.0*day)
+    f0 = 1e-4
+    u0 = omega * radius
     h0 = 10000.0
-    h1 = 2000.0
-    Lx = 2.0 * np.pi * radius
     Ly = np.pi * radius
-    dx = Lx / nlon
-    dy = Ly / nlat
-    x = (np.arange(nlon) + 0.5) * dx
-    y = (np.arange(nlat) + 0.5) * dy
-    x0 = 0.5 * Lx
-    y0 = 0.75 * Ly
-    r0 = radius / 4.0
-    b = np.zeros((nlon, nlat))
-    for j in range(nlat):
-        for i in range(nlon):
-            dist = np.hypot(x[i] - x0, y[j] - y0)
-            if dist < r0:
-                b[i, j] = h1 * (1.0 - dist / r0)
-    return h0 - b
+    dy = Ly / ny
+    y = (np.arange(ny) + 0.5) * dy
+    coeff = f0 * u0 * radius / g
+    hy = h0 + coeff * np.sin(y/radius) ** 2
+    h = np.repeat(hy[np.newaxis, :], nx, axis=0)
+    return h
 
 
 def main():
@@ -51,10 +47,10 @@ def main():
     exe_fwd = build_dir / 'shallow_water_test5_forward.out'
     exe_rev = build_dir / 'shallow_water_test5_reverse.out'
 
-    nlon, nlat = 128, 64
+    nx, ny = 128, 64
     rng = np.random.default_rng(0)
-    x = init_height(nlon, nlat)
-    d = rng.standard_normal((nlon, nlat))
+    x = init_height(nx, ny)
+    d = rng.standard_normal((nx, ny))
 
     x_file = build_dir / 'x5_tay.bin'
     d_file = build_dir / 'd5_tay.bin'

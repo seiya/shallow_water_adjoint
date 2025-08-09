@@ -25,11 +25,10 @@ def geostrophic_height(nlon, nlat):
     omega = 2.0 * pi / (12.0 * day)
     h0 = 10000.0
     u0 = 20.0
-    dlon = 2.0 * pi / nlon
     dlat = pi / nlat
     lat = -pi/2 + (np.arange(nlat) + 0.5) * dlat
     coeff = radius * omega * u0 / g
-    hlat = h0 - coeff * np.sin(lat) ** 2
+    hlat = h0 + coeff * np.sin(lat) ** 2
     return np.repeat(hlat[np.newaxis, :], nlon, axis=0)
 
 
