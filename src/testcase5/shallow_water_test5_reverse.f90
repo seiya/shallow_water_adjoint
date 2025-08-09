@@ -66,7 +66,7 @@ program shallow_water_test5_reverse
   u_ad = 0.d0
   v_ad = 0.d0
 
-  call calc_mass_residual_rev_ad(h, h_ad, mass_res_ad)
+  call calc_mass_residual_rev_ad(h_ad, mass_res_ad)
   call calc_energy_residual_rev_ad(h, h_ad, u, u_ad, v, v_ad, energy_res_ad)
 
   do n = nsteps, 0, -1
@@ -88,8 +88,8 @@ program shallow_water_test5_reverse
         end if
      end if
   end do
-  call geostrophic_velocity_rev_ad(u_ad, v_ad, hgeo, h_ad)
-  call exchange_halo_x_rev_ad(h, h_ad)
+  call geostrophic_velocity_rev_ad(u_ad, v_ad, h_ad)
+  call exchange_halo_x_rev_ad(h_ad)
   if (output_interval == 0) then
      call write_snapshot(0, h_ad, u, v)
   end if
