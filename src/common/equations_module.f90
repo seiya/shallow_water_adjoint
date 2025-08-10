@@ -18,6 +18,7 @@ contains
     end if
     y0 = 0.5d0*Ly
     r0 = radius/3.d0
+    !$omp parallel do private(dist)
     do j=1,ny
        do i=1,nx
           h(i,j) = h0
@@ -27,6 +28,7 @@ contains
           end if
        end do
     end do
+    !$omp end parallel do
     call exchange_halo_x(h)
   end subroutine init_height
 
@@ -35,12 +37,16 @@ contains
     real(dp), intent(out) :: u(is:ie,ny), v(is:ie,ny+1)
     real(dp), intent(in) :: x(is:ie), y(ny)
     integer :: i,j
+    !$omp parallel do
     do j = 1, ny
       do i = 1, nx
          u(i,j) = u0
       end do
     end do
+    !$omp end parallel do
+    !$omp parallel workshare
     v(:,:) = 0.d0
+    !$omp end parallel workshare
     call exchange_halo_x(u)
     call exchange_halo_x(v)
   end subroutine velocity_field
@@ -54,6 +60,7 @@ contains
     x0 = 0.5d0*Lx
     y0 = 0.75d0*Ly
     r0 = radius/4.d0
+    !$omp parallel do private(dist)
     do j=1,ny
        do i=1,nx
           dist = sqrt((x(i)-x0)**2 + (y(j)-y0)**2)
@@ -64,6 +71,7 @@ contains
           end if
        end do
     end do
+    !$omp end parallel do
     call exchange_halo_x(b)
   end subroutine init_topography
 
@@ -73,11 +81,13 @@ contains
     real(dp), intent(in) :: y(ny)
     integer :: i, j
     real(dp), parameter :: coeff = f0 * u0 * radius / g
+    !$omp parallel do
     do j = 1, ny
        do i = 1, nx
           h(i,j) = h0 + coeff * sin(y(j)/radius)**2
        end do
     end do
+    !$omp end parallel do
     call exchange_halo_x(h)
   end subroutine init_geostrophic_height
 
@@ -86,6 +96,7 @@ contains
     real(dp), intent(in)  :: h(is:ie,ny)
     integer :: i, j
     integer :: jp1, jm1
+    !$omp parallel do private(jp1,jm1)
     do j = 1, ny
        jp1 = min(j+1, ny)
        jm1 = max(j-1, 1)
@@ -93,16 +104,21 @@ contains
           u(i,j) = - g / f0 * ((h(i-1,jp1) + h(i,jp1)) - (h(i-1,jm1) + h(i,jm1))) / (4.0d0 * dy)
        end do
     end do
+    !$omp end parallel do
+    !$omp parallel do private(jm1)
     do j = 2, ny
        jm1 = j - 1
        do i = 1, nx
           v(i,j) = g / f0 * ((h(i+1,jm1) + h(i+1,j)) - (h(i-1,jm1) + h(i-1,j))) / (4.0d0 * dx)
        end do
     end do
+    !$omp end parallel do
     call exchange_halo_x(u)
     call exchange_halo_x(v)
+    !$omp parallel workshare
     v(:,1) = 0.0d0
     v(:,ny+1) = 0.0d0
+    !$omp end parallel workshare
   end subroutine geostrophic_velocity
 
   !$FAD SKIP
@@ -122,6 +138,7 @@ contains
     real(dp) :: h_e, h_w, h_n, h_s, v_avg, u_avg
 
     ! continuity equation
+    !$omp parallel do private(jp1,jm1,ue,uw,vn,vs,fe,fw,fn,fs)
     do j=1,ny
        jp1 = min(j+1,ny)
        jm1 = max(j-1,1)
@@ -153,16 +170,20 @@ contains
           dhdt(i,j) = -((fe - fw)/dx + (fn - fs)/dy)
        end do
     end do
+    !$omp end parallel do
 
     if (present(no_momentum_tendency)) then
        if (no_momentum_tendency) then
+          !$omp parallel workshare
           dudt = 0.d0
           dvdt = 0.d0
+          !$omp end parallel workshare
           return
        end if
     end if
 
     ! zonal momentum
+    !$omp parallel do private(jp1,jm1,h_e,h_w,v_avg)
     do j=1,ny
        jp1 = min(j+1,ny)
        jm1 = max(j-1,1)
@@ -176,8 +197,10 @@ contains
                       + f0 * v_avg
        end do
     end do
+    !$omp end parallel do
 
     ! meridional momentum
+    !$omp parallel do private(jp1,jm1,h_n,h_s,u_avg)
     do j=2,ny
        jp1 = min(j+1,ny)
        jm1 = j-1
@@ -191,8 +214,11 @@ contains
                       - f0 * u_avg
        end do
     end do
+    !$omp end parallel do
+    !$omp parallel workshare
     dvdt(:,1) = 0.d0
     dvdt(:,ny+1) = 0.d0
+    !$omp end parallel workshare
   end subroutine rhs
 
 end module equations_module

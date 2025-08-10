@@ -4,6 +4,7 @@
 FC = gfortran
 FFLAGS ?= -O2 -ffree-line-length-none
 FFLAGS += -ffpe-trap=invalid,zero,overflow -fbounds-check -finit-real=nan -g -fbacktrace
+FFLAGS += -fopenmp
 
 COMMON_OBJS = constants_module.o \
               variables_module.o \
