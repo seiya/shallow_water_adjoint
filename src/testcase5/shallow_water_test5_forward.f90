@@ -39,7 +39,6 @@ program shallow_water_test5_forward
      h_ad(nx/4:nx/4+1, ny*3/4:ny*3/4+1) = 1.0_dp
   end if
   call geostrophic_velocity_fwd_ad(u, u_ad, v, v_ad, hgeo, h_ad)
-  call geostrophic_velocity(u,v, hgeo)
   h = hgeo - b
   mass_res = calc_mass_residual(h)
   energy_res = calc_energy_residual(h, u, v)
@@ -47,7 +46,7 @@ program shallow_water_test5_forward
      t = n*dt
      if (output_interval > 0) then
         if (mod(n, output_interval) == 0) then
-           call write_snapshot(n, h_ad, u, v)
+           call write_snapshot(n, h_ad, u_ad, v_ad)
         end if
      end if
      if (n == nsteps) exit
@@ -57,7 +56,7 @@ program shallow_water_test5_forward
      v = vn; v_ad = vn_ad
   end do
   if (output_interval == 0) then
-     call write_snapshot(nsteps, h_ad, u, v)
+     call write_snapshot(nsteps, h_ad, u_ad, v_ad)
   end if
   mass_res = calc_mass_residual(h)
   call calc_mass_residual_fwd_ad(h, h_ad, mass_res, mass_res_ad)

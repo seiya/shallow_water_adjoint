@@ -1,7 +1,7 @@
 program shallow_water_test1_reverse
   use constants_module, only: dp
   use cost_module, only: calc_mse, calc_mass_residual
-  use cost_module_ad, only: calc_mse_rev_ad, calc_mass_residual_rev_ad
+  use cost_module_ad, only: calc_mse_rev_ad, calc_mass_residual_rev_ad, calc_mass_residual_fwd_rev_ad
   use variables_module
   use variables_module_ad
   use equations_module
@@ -50,6 +50,7 @@ program shallow_water_test1_reverse
   t = nsteps*dt
   call analytic_height(ha, x, y, t)
   mse = calc_mse(h, ha)
+  call calc_mass_residual_fwd_rev_ad()
   mass_res = calc_mass_residual(h)
 
   call finalize_variables_rev_ad()
@@ -60,7 +61,7 @@ program shallow_water_test1_reverse
   u_ad = 0.0_dp
   v_ad = 0.0_dp
 
-  call calc_mass_residual_rev_ad(h, h_ad, mass_res_ad)
+  call calc_mass_residual_rev_ad(h_ad, mass_res_ad)
   call calc_mse_rev_ad(h, h_ad, ha, mse_ad)
   do n = nsteps, 0, -1
      call fautodiff_stack_pop_r(v)
@@ -77,13 +78,13 @@ program shallow_water_test1_reverse
      end if
      if (output_interval > 0) then
         if (mod(n, output_interval) == 0) then
-          call write_snapshot(n, h_ad, u, v)
+          call write_snapshot(n, h_ad, u_ad, v_ad)
         end if
      end if
   end do
-  call exchange_halo_x_rev_ad(h, h_ad)
+  call exchange_halo_x_rev_ad(h_ad)
   if (output_interval == 0) then
-     call write_snapshot(0, h_ad, u, v)
+     call write_snapshot(0, h_ad, u_ad, v_ad)
   end if
   grad_dot_d = sum(h_ad*d)
   print *, sum(h_ad), minval(h_ad), maxval(h_ad)

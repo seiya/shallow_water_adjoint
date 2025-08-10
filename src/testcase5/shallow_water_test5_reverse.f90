@@ -1,7 +1,7 @@
 program shallow_water_test5_reverse
   use constants_module, only: dp
   use cost_module, only: calc_mass_residual, calc_energy_residual, calc_wave_pattern
-  use cost_module_ad, only: calc_mass_residual_rev_ad, calc_energy_residual_rev_ad
+  use cost_module_ad, only: calc_mass_residual_rev_ad, calc_energy_residual_rev_ad, calc_mass_residual_fwd_rev_ad, calc_energy_residual_fwd_rev_ad
   use variables_module
   use variables_module_ad
   use equations_module
@@ -41,6 +41,7 @@ program shallow_water_test5_reverse
   end if
 
   call geostrophic_velocity(u, v, hgeo)
+
   h = hgeo - b
   mass_res = calc_mass_residual(h)
   energy_res = calc_energy_residual(h, u, v)
@@ -55,7 +56,9 @@ program shallow_water_test5_reverse
      v = vn
   end do
   wave = calc_wave_pattern(h)
+  call calc_mass_residual_fwd_rev_ad()
   mass_res = calc_mass_residual(h)
+  call calc_energy_residual_fwd_rev_ad()
   energy_res = calc_energy_residual(h, u, v)
 
   call finalize_variables_rev_ad()
@@ -66,8 +69,8 @@ program shallow_water_test5_reverse
   u_ad = 0.d0
   v_ad = 0.d0
 
-  call calc_mass_residual_rev_ad(h, h_ad, mass_res_ad)
   call calc_energy_residual_rev_ad(h, h_ad, u, u_ad, v, v_ad, energy_res_ad)
+  call calc_mass_residual_rev_ad(h_ad, mass_res_ad)
 
   do n = nsteps, 0, -1
      call fautodiff_stack_pop_r(v)
@@ -84,17 +87,16 @@ program shallow_water_test5_reverse
      end if
      if (output_interval > 0) then
         if (mod(n, output_interval) == 0) then
-           call write_snapshot(n, h_ad, u, v)
+           call write_snapshot(n, h_ad, u_ad, v_ad)
         end if
      end if
   end do
-  call geostrophic_velocity_rev_ad(u_ad, v_ad, hgeo, h_ad)
-  call exchange_halo_x_rev_ad(h, h_ad)
+  call geostrophic_velocity_rev_ad(u_ad, v_ad, h_ad)
+  call exchange_halo_x_rev_ad(h_ad)
   if (output_interval == 0) then
-     call write_snapshot(0, h_ad, u, v)
+     call write_snapshot(0, h_ad, u_ad, v_ad)
   end if
   grad_dot_d = sum(h_ad*d)
-  print *, sum(h_ad), minval(h_ad), maxval(h_ad)
   print *, grad_dot_d
   call init_variables_rev_ad()
   call finalize_variables()

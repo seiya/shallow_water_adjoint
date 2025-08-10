@@ -42,7 +42,7 @@ program shallow_water_test1_forward
      t = n*dt
      if (output_interval > 0) then
         if (mod(n, output_interval) == 0) then
-           call write_snapshot(n, h_ad, u, v)
+           call write_snapshot(n, h_ad, u_ad, v_ad)
         end if
      end if
      if (n == nsteps) exit
@@ -51,7 +51,7 @@ program shallow_water_test1_forward
      h = hn
   end do
   if (output_interval == 0) then
-     call write_snapshot(nsteps, h_ad, u, v)
+     call write_snapshot(nsteps, h_ad, u_ad, v_ad)
   end if
   t = nsteps*dt
   call analytic_height(ha, x, y, t)
