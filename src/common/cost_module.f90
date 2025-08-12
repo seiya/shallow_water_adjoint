@@ -49,13 +49,17 @@ contains
     real(dp) :: pattern
     real(dp) :: zonal_mean(ny)
     integer :: i, j
+    !$omp parallel workshare
     zonal_mean = sum(height(1:nx,:),dim=1)/nx
+    !$omp end parallel workshare
     pattern = 0.d0
+    !$omp parallel do reduction(+:pattern)
     do j = 1, ny
        do i = 1, nx
           pattern = pattern + (height(i,j) - zonal_mean(j))**2
        end do
     end do
+    !$omp end parallel do
     pattern = pattern / (nx*ny)
   end function calc_wave_pattern
 
@@ -71,6 +75,7 @@ contains
     l1err = 0.d0
     l2err = 0.d0
 
+    !$omp parallel do private(err) reduction(max:maxerr) reduction(+:l1err,l2err)
     do j = 1, ny
        do i = 1, nx
           err = height_num(i,j) - height_ana(i,j)
@@ -79,6 +84,7 @@ contains
           l2err = l2err + err*err
        end do
     end do
+    !$omp end parallel do
 
     l1err = l1err / (nx * ny)
     l2err = sqrt(l2err / (nx * ny))

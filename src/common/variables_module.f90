@@ -35,13 +35,17 @@ contains
     allocate(u(is:ie,ny), v(is:ie,ny+1))
     allocate(b(is:ie,ny))
 
+    !$omp parallel do
     do i=1,nx
         x(i) = (i-0.5d0)*dx
     end do
+    !$omp end parallel do
     call exchange_halo_x_1d(x)
+    !$omp parallel do
     do j=1,ny
        y(j) = (j-0.5d0)*dy
     end do
+    !$omp end parallel do
   end subroutine init_variables
 
   subroutine finalize_variables()
