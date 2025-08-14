@@ -11,6 +11,7 @@ program shallow_water_test1_reverse
   use io_module
   use io_module_ad
   use fautodiff_stack
+  use mpi_decomp_module, only: init_decomp, finalize_decomp
   implicit none
 
   real(dp) :: t, maxerr, l1err, l2err, mse, mass_res
@@ -22,6 +23,7 @@ program shallow_water_test1_reverse
   real(dp) :: un(is:ie,ny), vn(is:ie,ny+1)
   real(dp) :: un_ad(is:ie,ny), vn_ad(is:ie,ny+1)
 
+  call init_decomp(nx, ny)
   call init_variables()
   call read_output_interval(output_interval)
   call write_grid_params()
@@ -82,7 +84,7 @@ program shallow_water_test1_reverse
         end if
      end if
   end do
-  call exchange_halo_x_rev_ad(h_ad)
+  call exchange_halo_x(h_ad)
   if (output_interval == 0) then
      call write_snapshot(0, h_ad, u_ad, v_ad)
   end if
@@ -92,5 +94,6 @@ program shallow_water_test1_reverse
   call init_variables_rev_ad()
 
   call finalize_variables()
+  call finalize_decomp()
 
 end program shallow_water_test1_reverse
