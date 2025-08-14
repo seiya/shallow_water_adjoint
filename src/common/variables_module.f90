@@ -1,5 +1,6 @@
 module variables_module
   use constants_module, only: dp, sp
+  use mpi
   implicit none
   integer, parameter :: nx=128, ny=64
   integer, parameter :: ihalo=1
@@ -59,16 +60,37 @@ contains
     if (allocated(b)) deallocate(b)
   end subroutine finalize_variables
 
-    subroutine exchange_halo_x(field)
-      real(dp), intent(inout) :: field(is:,:)
-      field(is:0, :) = field(nx+1-ihalo:nx, :)
-      field(nx+1:ie, :) = field(1:ihalo, :)
-    end subroutine exchange_halo_x
+  subroutine exchange_halo_x(field)
+    use mpi_decomp_module, only : comm_cart, nbr_west, nbr_east
+    use mpi
+    real(dp), intent(inout) :: field(is:,:)
+    integer :: ierr, ny_local, cnt
+    integer :: requests(4)
 
-    subroutine exchange_halo_x_1d(field)
-      real(dp), intent(inout) :: field(is:)
-      field(is:0) = field(nx+1-ihalo:nx)
-      field(nx+1:ie) = field(1:ihalo)
-    end subroutine exchange_halo_x_1d
+    ny_local = size(field,2)
+    cnt = ny_local
+
+    call MPI_Irecv(field(is,:),   cnt, MPI_DOUBLE_PRECISION, nbr_west, 0, comm_cart, requests(1), ierr)
+    call MPI_Irecv(field(nx+1,:), cnt, MPI_DOUBLE_PRECISION, nbr_east, 1, comm_cart, requests(2), ierr)
+    call MPI_Isend(field(nx,:),   cnt, MPI_DOUBLE_PRECISION, nbr_east, 0, comm_cart, requests(3), ierr)
+    call MPI_Isend(field(1,:),    cnt, MPI_DOUBLE_PRECISION, nbr_west, 1, comm_cart, requests(4), ierr)
+    call MPI_Waitall(4, requests, MPI_STATUSES_IGNORE, ierr)
+  end subroutine exchange_halo_x
+
+  subroutine exchange_halo_x_1d(field)
+    use mpi_decomp_module, only : comm_cart, nbr_west, nbr_east
+    use mpi
+    real(dp), intent(inout) :: field(is:)
+    integer :: ierr, cnt
+    integer :: requests(4)
+
+    cnt = ihalo
+
+    call MPI_Irecv(field(is:0),   cnt, MPI_DOUBLE_PRECISION, nbr_west, 0, comm_cart, requests(1), ierr)
+    call MPI_Irecv(field(nx+1:ie), cnt, MPI_DOUBLE_PRECISION, nbr_east, 1, comm_cart, requests(2), ierr)
+    call MPI_Isend(field(nx+1-ihalo:nx), cnt, MPI_DOUBLE_PRECISION, nbr_east, 0, comm_cart, requests(3), ierr)
+    call MPI_Isend(field(1:ihalo),       cnt, MPI_DOUBLE_PRECISION, nbr_west, 1, comm_cart, requests(4), ierr)
+    call MPI_Waitall(4, requests, MPI_STATUSES_IGNORE, ierr)
+  end subroutine exchange_halo_x_1d
 
 end module variables_module
