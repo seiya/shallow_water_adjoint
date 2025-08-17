@@ -1,4 +1,4 @@
-.PHONY: all ad clean
+.PHONY: all ad clean update_fautodiff
 .RECIPEPREFIX := >
 
 FC = gfortran
@@ -20,7 +20,8 @@ FAUTODIFF_SRC  = fautodiff_stack.f90
 
 VPATH = ../src/common
 
-all: shallow_water_test1.out shallow_water_test1_forward.out shallow_water_test1_reverse.out \
+all: update_fautodiff \
+     shallow_water_test1.out shallow_water_test1_forward.out shallow_water_test1_reverse.out \
      shallow_water_test2.out shallow_water_test2_forward.out shallow_water_test2_reverse.out \
      shallow_water_test5.out shallow_water_test5_forward.out shallow_water_test5_reverse.out
 
@@ -60,10 +61,13 @@ shallow_water_test5_reverse.out: ../src/testcase5/shallow_water_test5_reverse.f9
 %_ad.f90: %.f90 $(FAUTODIFF_SRC)
 >../scripts/fautodiff/bin/fautodiff $< -I . -M . -o $@
 
-ad: $(FAUTODIFF_SRC)
+ad: update_fautodiff
+
+update_fautodiff:
+>../scripts/setup_fautodiff.sh
+>../scripts/copy_fautodiff_modules.sh
 
 $(FAUTODIFF_SRC):
->../scripts/setup_fautodiff.sh
 >../scripts/copy_fautodiff_modules.sh
 
 clean:
