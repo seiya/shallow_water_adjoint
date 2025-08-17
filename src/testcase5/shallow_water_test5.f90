@@ -10,12 +10,16 @@ program shallow_water_test5
 
   real(dp) :: t, mass_res, energy_res, wave
   integer :: n
-  real(dp) :: un(is:ie,ny), vn(is:ie,ny+1)
   character(len=256) :: carg
-  real(dp) :: hgeo(is:ie,ny)
+  real(dp), allocatable :: un(:,:), vn(:,:)
+  real(dp), allocatable :: hgeo(:,:)
 
   call init_decomp(nx, ny)
   call init_variables()
+
+  allocate(un(is:ie,js:je), vn(is:ie,js:jend+1))
+  allocate(hgeo(is:ie,js:je))
+
   call read_output_interval(output_interval)
   call write_grid_params()
   call init_topography(b, x, y)

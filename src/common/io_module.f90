@@ -1,7 +1,7 @@
 module io_module
   use constants_module, only: dp, sp
   use variables_module, only: nx, ny, day, pi, h, u, v, &
-                              ihalo, is, ie, exchange_halo_x
+                              ihalo, is, ie, js, je, exchange_halo_x
   implicit none
 contains
 
@@ -18,7 +18,7 @@ contains
   !$FAD SKIP
   subroutine read_field(field, filename)
     !! Read a two-dimensional field from a binary file.
-    real(dp), intent(out) :: field(is:ie,ny)
+    real(dp), intent(out) :: field(is:ie,js:je)
     character(len=*), intent(in) :: filename
     open(unit=50,file=filename,form='unformatted',access='stream',status='old')
     read(50) field(1:nx,1:ny)
@@ -51,18 +51,55 @@ contains
 
   !$FAD SKIP
   subroutine write_snapshot(n, h, u, v)
+    use mpi
+    use mpi_decomp_module, only: istart, iend, jstart, jend
     integer, intent(in) :: n
-    real(dp), intent(in) :: h(is:ie,ny)
-    real(dp), intent(in) :: u(is:ie,ny), v(is:ie,ny+1)
-    real(sp) :: hsp(nx,ny), usp(nx,ny), vsp(nx,ny)
+    real(dp), intent(in) :: h(is:ie,js:je)
+    real(dp), intent(in) :: u(is:ie,js:je), v(is:ie,js:jend+1)
+    real(sp) :: hsp(istart:iend,jstart:jend)
+    real(sp) :: usp(istart:iend,jstart:jend)
+    real(sp) :: vsp(istart:iend,jstart:jend)
+    integer :: ni, nj
     character(len=32) :: filename
-    hsp = real(h(1:nx,:),sp)
-    usp = real(0.5d0*(u(1:nx,:) + u(2:nx+1,:)), sp)
-    vsp = real(0.5d0*(v(1:nx,1:ny) + v(1:nx,2:ny+1)), sp)
+    integer :: fh, newtype, ierr
+    integer(kind=MPI_Offset_kind) :: disp
+    integer :: i, j
+    do j = jstart, jend
+      do i = istart, iend
+        hsp(i,j) = real(h(i,j), sp)
+        usp(i,j) = real(0.5d0 * (u(i,j) + u(i+1,j)), sp)
+        vsp(i,j) = real(0.5d0 * (v(i,j) + v(i,j+1)), sp)
+      end do
+    end do
+    ni = iend - istart + 1
+    nj = jend - jstart + 1
     write(filename,'("snapshot_",i4.4,".bin")') n
-    open(unit=20,file=filename,form='unformatted',access='stream',status='replace')
-    write(20) hsp, usp, vsp
-    close(20)
+    call MPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_WRONLY + MPI_MODE_CREATE, MPI_INFO_NULL, fh, ierr)
+    if (ierr /= MPI_SUCCESS) stop 'MPI_File_open failed'
+    call MPI_File_set_size(fh, 0_MPI_OFFSET_KIND, ierr)
+    call MPI_Type_create_subarray(2, [nx, ny], [ni, nj], [istart-1, jstart-1], MPI_ORDER_FORTRAN, MPI_REAL, newtype, ierr)
+    call MPI_Type_commit(newtype, ierr)
+
+    disp = 0_MPI_OFFSET_KIND
+    call MPI_File_set_view(fh, disp, MPI_REAL, newtype, 'native', MPI_INFO_NULL, ierr)
+    call MPI_File_write_all(fh, hsp, ni * nj, MPI_REAL, MPI_STATUS_IGNORE, ierr)
+    if (ierr /= MPI_SUCCESS) stop 'MPI_File_write_all (hsp) failed'
+
+    disp = 4_MPI_OFFSET_KIND * (nx * ny) ! 4 byte * nx * ny
+    call MPI_File_set_view(fh, disp, MPI_REAL, newtype, 'native', MPI_INFO_NULL, ierr)
+    call MPI_File_write_all(fh, usp, ni * nj, MPI_REAL, MPI_STATUS_IGNORE, ierr)
+    if (ierr /= MPI_SUCCESS) stop 'MPI_File_write_all (usp) failed'
+
+    disp = 8_MPI_OFFSET_KIND * (nx * ny) ! 2 * 4 byte * nx * ny
+    call MPI_File_set_view(fh, disp, MPI_REAL, newtype, 'native', MPI_INFO_NULL, ierr)
+    call MPI_File_write_all(fh, vsp, ni * nj, MPI_REAL, MPI_STATUS_IGNORE, ierr)
+    if (ierr /= MPI_SUCCESS) stop 'MPI_File_write_all (vsp) failed'
+
+    call MPI_Type_free(newtype, ierr)
+    call MPI_File_close(fh, ierr)
+    !open(unit=20,file=filename,form='unformatted',access='stream',status='replace')
+    !write(20) hsp, usp, vsp
+    !close(20)
   end subroutine write_snapshot
 
   !$FAD SKIP

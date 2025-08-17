@@ -16,11 +16,15 @@ program shallow_water_test2_forward
   real(dp) :: t_ad, mse_ad, mass_res_ad
   integer :: n
   character(len=256) :: carg
-  real(dp) :: un(is:ie,ny), vn(is:ie,ny+1)
-  real(dp) :: un_ad(is:ie,ny), vn_ad(is:ie,ny+1)
+  real(dp), allocatable :: un(:,:), vn(:,:)
+  real(dp), allocatable :: un_ad(:,:), vn_ad(:,:)
 
   call init_decomp(nx, ny)
   call init_variables()
+
+  allocate(un(is:ie,js:je), vn(is:ie,js:jend+1))
+  allocate(un_ad(is:ie,js:je), vn_ad(is:ie,js:jend+1))
+
   call read_output_interval(output_interval)
   call write_grid_params()
   call init_variables_fwd_ad()

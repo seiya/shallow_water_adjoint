@@ -1,38 +1,37 @@
 module rk4_module
   use constants_module, only: dp
-  use variables_module, only: nx, ny, dt, ihalo, is, ie, exchange_halo_x
+  use variables_module, only: nx, ny, dt, ihalo, is, ie, js, je, exchange_halo_x
   use equations_module, only: rhs
+  use mpi_decomp_module, only: istart, iend, jstart, jend
   implicit none
 contains
 
   subroutine rk4_step(h,u,v,hn,un,vn,no_momentum_tendency)
-    real(dp), intent(in) :: h(is:ie,ny), u(is:ie,ny), v(is:ie,ny+1)
-    real(dp), intent(out) :: hn(is:ie,ny), un(is:ie,ny), vn(is:ie,ny+1)
+    real(dp), intent(in) :: h(is:ie,js:je), u(is:ie,js:je), v(is:ie,js:je+1)
+    real(dp), intent(out) :: hn(is:ie,js:je), un(is:ie,js:je), vn(is:ie,js:jend+1)
     logical, intent(in), optional :: no_momentum_tendency
-    real(dp) :: k1h(is:ie,ny), k2h(is:ie,ny), k3h(is:ie,ny), k4h(is:ie,ny)
-    real(dp) :: k1u(is:ie,ny), k2u(is:ie,ny), k3u(is:ie,ny), k4u(is:ie,ny)
-    real(dp) :: k1v(is:ie,ny+1), k2v(is:ie,ny+1), k3v(is:ie,ny+1), k4v(is:ie,ny+1)
-    real(dp) :: htmp(is:ie,ny), utmp(is:ie,ny), vtmp(is:ie,ny+1)
+    real(dp) :: k1h(is:ie,js:je), k2h(is:ie,js:je), k3h(is:ie,js:je), k4h(is:ie,js:je)
+    real(dp) :: k1u(is:ie,js:je), k2u(is:ie,js:je), k3u(is:ie,js:je), k4u(is:ie,js:je)
+    real(dp) :: k1v(is:ie,js:jend+1), k2v(is:ie,js:jend+1), k3v(is:ie,js:jend+1), k4v(is:ie,js:jend+1)
+    real(dp) :: htmp(is:ie,js:je), utmp(is:ie,js:je), vtmp(is:ie,js:jend+1)
     logical :: skip_momentum
     skip_momentum = .false.
     if (present(no_momentum_tendency)) skip_momentum = no_momentum_tendency
 
     if (skip_momentum) then
        call rhs(h, u, v, k1h, k1u, k1v, no_momentum_tendency=.true.)
-       htmp = h + 0.5d0*dt*k1h
+       htmp(istart:iend,jstart:jend) = h(istart:iend,jstart:jend) + 0.5d0*dt*k1h(istart:iend,jstart:jend)
        call exchange_halo_x(htmp)
        call rhs(htmp, u, v, k2h, k2u, k2v, no_momentum_tendency=.true.)
-       htmp = h + 0.5d0*dt*k2h
+       htmp(istart:iend,jstart:jend) = h(istart:iend,jstart:jend) + 0.5d0*dt*k2h(istart:iend,jstart:jend)
        call exchange_halo_x(htmp)
        call rhs(htmp, u, v, k3h, k3u, k3v, no_momentum_tendency=.true.)
-       htmp = h + dt*k3h
+       htmp(istart:iend,jstart:jend) = h(istart:iend,jstart:jend) + dt*k3h(istart:iend,jstart:jend)
        call exchange_halo_x(htmp)
        call rhs(htmp, u, v, k4h, k4u, k4v, no_momentum_tendency=.true.)
-       hn = h + dt*(k1h + 2.d0*k2h + 2.d0*k3h + k4h)/6.d0
-       un = u
-       vn = v
-       vn(:,1) = 0.d0
-       vn(:,ny+1) = 0.d0
+       hn(istart:iend,jstart:jend) = h(istart:iend,jstart:jend) + dt*(k1h(istart:iend,jstart:jend) + 2.d0*k2h(istart:iend,jstart:jend) + 2.d0*k3h(istart:iend,jstart:jend) + k4h(istart:iend,jstart:jend))/6.d0
+       un(istart:iend,jstart:jend) = u(istart:iend,jstart:jend)
+       vn(istart:iend,jstart:jend) = v(istart:iend,jstart:jend)
        call exchange_halo_x(hn)
        call exchange_halo_x(un)
        call exchange_halo_x(vn)
@@ -40,32 +39,30 @@ contains
     end if
 
     call rhs(h, u, v, k1h, k1u, k1v, no_momentum_tendency=.false.)
-    htmp = h + 0.5d0*dt*k1h
-    utmp = u + 0.5d0*dt*k1u
-    vtmp = v + 0.5d0*dt*k1v
+    htmp(istart:iend,jstart:jend) = h(istart:iend,jstart:jend) + 0.5d0*dt*k1h(istart:iend,jstart:jend)
+    utmp(istart:iend,jstart:jend) = u(istart:iend,jstart:jend) + 0.5d0*dt*k1u(istart:iend,jstart:jend)
+    vtmp(istart:iend,jstart:jend) = v(istart:iend,jstart:jend) + 0.5d0*dt*k1v(istart:iend,jstart:jend)
     call exchange_halo_x(htmp)
     call exchange_halo_x(utmp)
     call exchange_halo_x(vtmp)
     call rhs(htmp, utmp, vtmp, k2h, k2u, k2v, no_momentum_tendency=.false.)
-    htmp = h + 0.5d0*dt*k2h
-    utmp = u + 0.5d0*dt*k2u
-    vtmp = v + 0.5d0*dt*k2v
+    htmp(istart:iend,jstart:jend) = h(istart:iend,jstart:jend) + 0.5d0*dt*k2h(istart:iend,jstart:jend)
+    utmp(istart:iend,jstart:jend) = u(istart:iend,jstart:jend) + 0.5d0*dt*k2u(istart:iend,jstart:jend)
+    vtmp(istart:iend,jstart:jend) = v(istart:iend,jstart:jend) + 0.5d0*dt*k2v(istart:iend,jstart:jend)
     call exchange_halo_x(htmp)
     call exchange_halo_x(utmp)
     call exchange_halo_x(vtmp)
     call rhs(htmp, utmp, vtmp, k3h, k3u, k3v, no_momentum_tendency=.false.)
-    htmp = h + dt*k3h
-    utmp = u + dt*k3u
-    vtmp = v + dt*k3v
+    htmp(istart:iend,jstart:jend) = h(istart:iend,jstart:jend) + dt*k3h(istart:iend,jstart:jend)
+    utmp(istart:iend,jstart:jend) = u(istart:iend,jstart:jend) + dt*k3u(istart:iend,jstart:jend)
+    vtmp(istart:iend,jstart:jend) = v(istart:iend,jstart:jend) + dt*k3v(istart:iend,jstart:jend)
     call exchange_halo_x(htmp)
     call exchange_halo_x(utmp)
     call exchange_halo_x(vtmp)
     call rhs(htmp, utmp, vtmp, k4h, k4u, k4v, no_momentum_tendency=.false.)
-    hn = h + dt*(k1h + 2.d0*k2h + 2.d0*k3h + k4h)/6.d0
-    un = u + dt*(k1u + 2.d0*k2u + 2.d0*k3u + k4u)/6.d0
-    vn = v + dt*(k1v + 2.d0*k2v + 2.d0*k3v + k4v)/6.d0
-    vn(:,1) = 0.d0
-    vn(:,ny+1) = 0.d0
+    hn(istart:iend,jstart:jend) = h(istart:iend,jstart:jend) + dt*(k1h(istart:iend,jstart:jend) + 2.d0*k2h(istart:iend,jstart:jend) + 2.d0*k3h(istart:iend,jstart:jend) + k4h(istart:iend,jstart:jend))/6.d0
+    un(istart:iend,jstart:jend) = u(istart:iend,jstart:jend) + dt*(k1u(istart:iend,jstart:jend) + 2.d0*k2u(istart:iend,jstart:jend) + 2.d0*k3u(istart:iend,jstart:jend) + k4u(istart:iend,jstart:jend))/6.d0
+    vn(istart:iend,jstart:jend) = v(istart:iend,jstart:jend) + dt*(k1v(istart:iend,jstart:jend) + 2.d0*k2v(istart:iend,jstart:jend) + 2.d0*k3v(istart:iend,jstart:jend) + k4v(istart:iend,jstart:jend))/6.d0
     call exchange_halo_x(hn)
     call exchange_halo_x(un)
     call exchange_halo_x(vn)
