@@ -4,7 +4,7 @@ module mpi_decomp_module
   implicit none
   integer, parameter :: MPI_COMM_NULL = 0
   integer :: comm_cart = MPI_COMM_NULL
-  integer :: rank = -1, size = 0
+  integer :: mpi_rank = -1, mpi_size = 0
   integer :: dims(2) = 0, coords(2) = 0
   logical :: periods(2) = (/ .false., .false. /)
   integer :: nbr_west, nbr_east, nbr_south, nbr_north
@@ -14,13 +14,13 @@ contains
     integer, intent(in) :: nx_global, ny_global
     integer :: ierr
     call MPI_Init(ierr)
-    call MPI_Comm_rank(MPI_COMM_WORLD, rank, ierr)
-    call MPI_Comm_size(MPI_COMM_WORLD, size, ierr)
+    call MPI_Comm_rank(MPI_COMM_WORLD, mpi_rank, ierr)
+    call MPI_Comm_size(MPI_COMM_WORLD, mpi_size, ierr)
     dims = 0
-    call MPI_Dims_create(size, 2, dims, ierr)
+    call MPI_Dims_create(mpi_size, 2, dims, ierr)
     periods = (/ .true., .false. /)
     call MPI_Cart_create(MPI_COMM_WORLD, 2, dims, periods, .false., comm_cart, ierr)
-    call MPI_Cart_coords(comm_cart, rank, 2, coords, ierr)
+    call MPI_Cart_coords(comm_cart, mpi_rank, 2, coords, ierr)
     istart = block_start(coords(1), dims(1), nx_global)
     iend   = block_end(coords(1), dims(1), nx_global)
     jstart = block_start(coords(2), dims(2), ny_global)
