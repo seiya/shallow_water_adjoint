@@ -1,22 +1,23 @@
 .PHONY: all ad clean update_fautodiff
 .RECIPEPREFIX := >
 
-FC = gfortran
+FC = mpif90
 FFLAGS ?= -O2 -ffree-line-length-none
 FFLAGS += -ffpe-trap=invalid,zero,overflow -fbounds-check -finit-real=nan -g -fbacktrace
 FFLAGS += -fopenmp
 
 COMMON_OBJS = constants_module.o \
+              mpi_decomp_module.o \
               variables_module.o \
-			  equations_module.o \
-			  rk4_module.o \
-			  io_module.o \
-			  cost_module.o
+              equations_module.o \
+              rk4_module.o \
+              io_module.o \
+              cost_module.o
 
 COMMON_AD_OBJS = $(patsubst %.o,%_ad.o,$(COMMON_OBJS))
 
-FAUTODIFF_OBJS = fautodiff_stack.o
-FAUTODIFF_SRC  = fautodiff_stack.f90
+FAUTODIFF_OBJS = fautodiff_stack.o mpi_ad.o
+FAUTODIFF_SRC  = fautodiff_stack.f90 mpi_ad.f90
 
 VPATH = ../src/common
 
@@ -55,6 +56,9 @@ shallow_water_test5_reverse.out: ../src/testcase5/shallow_water_test5_reverse.f9
 %_ad.o: %_ad.f90 $(FAUTODIFF_OBJS)
 >$(FC) $(FFLAGS) -c $< -o $@
 
+mpi_ad.o: mpi_ad.f90
+>$(FC) $(FFLAGS) -c $< -o $@
+
 %.o: %.f90
 >$(FC) $(FFLAGS) -c $< -o $@
 
@@ -71,6 +75,6 @@ $(FAUTODIFF_SRC):
 >../scripts/copy_fautodiff_modules.sh
 
 clean:
->rm -f *.o *.mod *.out *_ad.f90 *.fadmod fautodiff_stack.f90
+>rm -f *.o *.mod *.out *_ad.f90 *.fadmod fautodiff_stack.f90 mpi_ad.f90
 
 .PRECIOUS: %_ad.f90

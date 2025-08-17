@@ -9,6 +9,7 @@ program shallow_water_test5_forward
   use rk4_module
   use rk4_module_ad
   use io_module
+  use mpi_decomp_module, only: init_decomp, finalize_decomp
   implicit none
 
   real(dp) :: t, mass_res, energy_res, wave
@@ -19,6 +20,7 @@ program shallow_water_test5_forward
   real(dp) :: un_ad(is:ie,ny), vn_ad(is:ie,ny+1)
   real(dp) :: hgeo(is:ie,ny)
 
+  call init_decomp(nx, ny)
   call init_variables()
   call init_variables_fwd_ad()
   call read_output_interval(output_interval)
@@ -65,4 +67,5 @@ program shallow_water_test5_forward
   call write_cost_log2(mass_res, energy_res, wave)
   print *, energy_res_ad, mass_res_ad, 0.d0
   call finalize_variables_fwd_ad()
+  call finalize_decomp()
 end program shallow_water_test5_forward

@@ -5,6 +5,7 @@ program shallow_water_test2
   use equations_module
   use rk4_module
   use io_module
+  use mpi_decomp_module, only: init_decomp, finalize_decomp
   implicit none
 
   real(dp) :: t, maxerr, l1err, l2err, mse, mass_res
@@ -12,6 +13,7 @@ program shallow_water_test2
   character(len=256) :: carg
   real(dp) :: un(is:ie,ny), vn(is:ie,ny+1)
 
+  call init_decomp(nx, ny)
   call init_variables()
   call read_output_interval(output_interval)
   call write_grid_params()
@@ -51,4 +53,5 @@ program shallow_water_test2
   mass_res = calc_mass_residual(h)
   call write_cost_log(mse, mass_res)
   call finalize_variables()
+  call finalize_decomp()
 end program shallow_water_test2

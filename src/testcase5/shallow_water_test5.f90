@@ -5,6 +5,7 @@ program shallow_water_test5
   use equations_module
   use rk4_module
   use io_module
+  use mpi_decomp_module, only: init_decomp, finalize_decomp
   implicit none
 
   real(dp) :: t, mass_res, energy_res, wave
@@ -13,6 +14,7 @@ program shallow_water_test5
   character(len=256) :: carg
   real(dp) :: hgeo(is:ie,ny)
 
+  call init_decomp(nx, ny)
   call init_variables()
   call read_output_interval(output_interval)
   call write_grid_params()
@@ -48,4 +50,5 @@ program shallow_water_test5
   wave = calc_wave_pattern(h)
   call write_cost_log2(mass_res, energy_res, wave)
   call finalize_variables()
+  call finalize_decomp()
 end program shallow_water_test5
