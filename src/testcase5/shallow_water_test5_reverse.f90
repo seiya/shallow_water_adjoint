@@ -19,13 +19,18 @@ program shallow_water_test5_reverse
   real(dp) :: grad_dot_d
   integer :: n
   character(len=256) :: carg
-  real(dp) :: d(is:ie,ny)
-  real(dp) :: un(is:ie,ny), vn(is:ie,ny+1)
-  real(dp) :: un_ad(is:ie,ny), vn_ad(is:ie,ny+1)
-  real(dp) :: hgeo(is:ie,ny)
+  real(dp), allocatable :: un(:,:), vn(:,:)
+  real(dp), allocatable :: un_ad(:,:), vn_ad(:,:)
+  real(dp), allocatable :: hgeo(:,:), d(:,:)
 
   call init_decomp(nx, ny)
   call init_variables()
+
+  allocate(un(is:ie,js:je), vn(is:ie,js:jend+1))
+  allocate(un_ad(is:ie,js:je), vn_ad(is:ie,js:jend+1))
+  allocate(hgeo(is:ie,js:je))
+  allocate(d(is:ie,js:je))
+
   call read_output_interval(output_interval)
   call write_grid_params()
   call init_topography(b, x, y)

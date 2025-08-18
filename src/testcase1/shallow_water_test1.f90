@@ -10,11 +10,14 @@ program shallow_water_test1
 
   real(dp) :: t, maxerr, l1err, l2err, mse, mass_res
   integer :: n
-  real(dp) :: un(is:ie,ny), vn(is:ie,ny+1)
+  real(dp), allocatable :: un(:,:), vn(:,:)
   character(len=256) :: carg
 
   call init_decomp(nx, ny)
   call init_variables()
+
+  allocate(un(is:ie,js:je), vn(is:ie,js:jend+1))
+
   call read_output_interval(output_interval)
   call write_grid_params()
   if (command_argument_count() >= 2) then

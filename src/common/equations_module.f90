@@ -1,14 +1,15 @@
 module equations_module
   use constants_module, only: dp
   use variables_module, only: nx, ny, Lx, Ly, dx, dy, g, radius, u0, f0, h0, h1, pi, b, &
-                               ihalo, is, ie, exchange_halo_x
+                               ihalo, is, ie, js, je, exchange_halo_x
   implicit none
 contains
 
   !$FAD SKIP
   subroutine init_height(h, x, y, xoffset)
-    real(dp), intent(out) :: h(is:ie,ny)
-    real(dp), intent(in) :: x(is:ie), y(ny)
+    use mpi_decomp_module, only: istart, iend, jstart, jend
+    real(dp), intent(out) :: h(is:ie,js:je)
+    real(dp), intent(in) :: x(is:ie), y(js:je)
     real(dp), intent(in), optional :: xoffset
     real(dp) :: x0, y0, r0, dist
     integer :: i,j
@@ -19,8 +20,8 @@ contains
     y0 = 0.5d0*Ly
     r0 = radius/3.d0
     !$omp parallel do private(dist)
-    do j=1,ny
-       do i=1,nx
+    do j = jstart, jend
+       do i = istart, iend
           h(i,j) = h0
           dist = sqrt( (x(i)-x0)**2 + (y(j)-y0)**2 )
           if (dist < r0) then
@@ -34,12 +35,13 @@ contains
 
   !$FAD SKIP
   subroutine velocity_field(u, v, x, y)
-    real(dp), intent(out) :: u(is:ie,ny), v(is:ie,ny+1)
-    real(dp), intent(in) :: x(is:ie), y(ny)
+    use mpi_decomp_module, only: istart, iend, jstart, jend
+    real(dp), intent(out) :: u(is:ie,js:je), v(is:ie,js:jend+1)
+    real(dp), intent(in) :: x(is:ie), y(js:je)
     integer :: i,j
     !$omp parallel do
-    do j = 1, ny
-      do i = 1, nx
+    do j = jstart, jend
+      do i = istart, iend
          u(i,j) = u0
       end do
     end do
@@ -53,16 +55,17 @@ contains
 
   !$FAD SKIP
   subroutine init_topography(b, x, y)
-    real(dp), intent(out) :: b(is:ie,ny)
-    real(dp), intent(in) :: x(is:ie), y(ny)
+    use mpi_decomp_module, only: istart, iend, jstart, jend
+    real(dp), intent(out) :: b(is:ie,js:je)
+    real(dp), intent(in) :: x(is:ie), y(js:je)
     real(dp) :: x0, y0, r0, dist
     integer :: i,j
     x0 = 0.5d0*Lx
     y0 = 0.75d0*Ly
     r0 = radius/4.d0
     !$omp parallel do private(dist)
-    do j=1,ny
-       do i=1,nx
+    do j = jstart, jend
+       do i = istart, iend
           dist = sqrt((x(i)-x0)**2 + (y(j)-y0)**2)
           if (dist < r0) then
              b(i,j) = h1 * (1.d0 - dist/r0)
@@ -77,13 +80,14 @@ contains
 
   !$FAD CONSTANT_VARS: y
   subroutine init_geostrophic_height(h, y)
-    real(dp), intent(out) :: h(is:ie,ny)
-    real(dp), intent(in) :: y(ny)
+    use mpi_decomp_module, only: istart, iend, jstart, jend
+    real(dp), intent(out) :: h(is:ie,js:je)
+    real(dp), intent(in) :: y(js:je)
     integer :: i, j
     real(dp), parameter :: coeff = f0 * u0 * radius / g
     !$omp parallel do
-    do j = 1, ny
-       do i = 1, nx
+    do j = jstart, jend
+       do i = istart, iend
           h(i,j) = h0 + coeff * sin(y(j)/radius)**2
        end do
     end do
@@ -92,46 +96,50 @@ contains
   end subroutine init_geostrophic_height
 
   subroutine geostrophic_velocity(u, v, h)
-    real(dp), intent(out) :: u(is:ie,ny), v(is:ie,ny+1)
-    real(dp), intent(in)  :: h(is:ie,ny)
+    use mpi_decomp_module, only: istart, iend, jstart, jend
+    real(dp), intent(out) :: u(is:ie,js:je), v(is:ie,js:jend+1)
+    real(dp), intent(in)  :: h(is:ie,js:je)
     integer :: i, j
     integer :: jp1, jm1
     !$omp parallel do private(jp1,jm1)
-    do j = 1, ny
+    do j = jstart, jend
        jp1 = min(j+1, ny)
        jm1 = max(j-1, 1)
-       do i = 1, nx
+       do i = istart, iend
           u(i,j) = - g / f0 * ((h(i-1,jp1) + h(i,jp1)) - (h(i-1,jm1) + h(i,jm1))) / (4.0d0 * dy)
        end do
     end do
     !$omp end parallel do
     !$omp parallel do private(jm1)
-    do j = 2, ny
+    do j = max(jstart, 2), jend
        jm1 = j - 1
-       do i = 1, nx
+       do i = istart, iend
           v(i,j) = g / f0 * ((h(i+1,jm1) + h(i+1,j)) - (h(i-1,jm1) + h(i-1,j))) / (4.0d0 * dx)
        end do
     end do
     !$omp end parallel do
     call exchange_halo_x(u)
     call exchange_halo_x(v)
-    !$omp parallel workshare
-    v(:,1) = 0.0d0
-    v(:,ny+1) = 0.0d0
-    !$omp end parallel workshare
+    if (jstart == 1) then
+       v(:,1) = 0.0_dp
+    end if
+    if (jend == ny) then
+       v(:,ny+1) = 0.0_dp
+    end if
   end subroutine geostrophic_velocity
 
   !$FAD SKIP
   subroutine analytic_height(ha, x, y, t)
-    real(dp), intent(out) :: ha(is:ie,ny)
+    real(dp), intent(out) :: ha(is:ie,js:je)
     real(dp), intent(in) :: x(is:ie), y(ny), t
     call init_height(ha, x, y, t*u0)
   end subroutine analytic_height
 
   subroutine rhs(h, u, v, dhdt, dudt, dvdt, no_momentum_tendency)
-    real(dp), intent(in) :: h(is:ie,ny), u(is:ie,ny), v(is:ie,ny+1)
-    real(dp), intent(out) :: dhdt(is:ie,ny)
-    real(dp), intent(out) :: dudt(is:ie,ny), dvdt(is:ie,ny+1)
+    use mpi_decomp_module, only: istart, iend, jstart, jend
+    real(dp), intent(in) :: h(is:ie,js:je), u(is:ie,js:je), v(is:ie,js:je+1)
+    real(dp), intent(out) :: dhdt(is:ie,js:je)
+    real(dp), intent(out) :: dudt(is:ie,js:je), dvdt(is:ie,js:je+1)
     logical, intent(in), optional :: no_momentum_tendency
     integer :: i,j,jp1,jm1
     real(dp) :: fe,fw,fn,fs,ue,uw,vn,vs
@@ -139,10 +147,10 @@ contains
 
     ! continuity equation
     !$omp parallel do private(jp1,jm1,ue,uw,vn,vs,fe,fw,fn,fs)
-    do j=1,ny
+    do j = jstart, jend
        jp1 = min(j+1,ny)
        jm1 = max(j-1,1)
-       do i=1,nx
+       do i = istart, iend
           ue = u(i+1,j)
           uw = u(i,j)
           if (ue > 0.d0) then
@@ -184,10 +192,10 @@ contains
 
     ! zonal momentum
     !$omp parallel do private(jp1,jm1,h_e,h_w,v_avg)
-    do j=1,ny
+    do j = jstart, jend
        jp1 = min(j+1,ny)
        jm1 = max(j-1,1)
-       do i=1,nx
+       do i = istart, iend
           h_e = h(i,j) + b(i,j)
           h_w = h(i-1,j) + b(i-1,j)
           v_avg = 0.25d0*(v(i-1,j) + v(i-1,j+1) + v(i,j) + v(i,j+1))
@@ -201,8 +209,8 @@ contains
 
     ! meridional momentum
     !$omp parallel do private(jp1,jm1,h_n,h_s,u_avg)
-    do j=2,ny
-       jp1 = min(j+1,ny)
+    do j = max(jstart, 2), jend
+       jp1 = j+1
        jm1 = j-1
        do i=1,nx
           h_n = h(i,j) + b(i,j)
@@ -215,10 +223,6 @@ contains
        end do
     end do
     !$omp end parallel do
-    !$omp parallel workshare
-    dvdt(:,1) = 0.d0
-    dvdt(:,ny+1) = 0.d0
-    !$omp end parallel workshare
   end subroutine rhs
 
 end module equations_module

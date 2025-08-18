@@ -15,6 +15,9 @@ program shallow_water_test2
 
   call init_decomp(nx, ny)
   call init_variables()
+
+  allocate(un(is:ie,js:je), vn(is:ie,js:jend+1))
+
   call read_output_interval(output_interval)
   call write_grid_params()
 

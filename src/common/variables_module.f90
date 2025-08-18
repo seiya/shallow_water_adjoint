@@ -4,8 +4,6 @@ module variables_module
   implicit none
   integer, parameter :: nx=128, ny=64
   integer, parameter :: ihalo=1
-  integer, parameter :: is=1-ihalo
-  integer, parameter :: ie=nx+ihalo
   real(dp), parameter :: pi=3.14159265358979323846d0
   real(dp), parameter :: radius=6371220.d0
   real(dp), parameter :: g=9.80616d0
@@ -23,6 +21,7 @@ module variables_module
   real(dp), allocatable :: h(:,:), hn(:,:), ha(:,:)
   real(dp), allocatable :: u(:,:), v(:,:)
   real(dp), allocatable :: b(:,:)
+  integer :: is, ie, js, je
 
   !$FAD CONSTANT_VARS: x, y, b
   !$FAD CONSTANT_VARS: ha
@@ -30,20 +29,45 @@ module variables_module
 contains
 
   subroutine init_variables()
+    use mpi_decomp_module, only : &
+      nbr_west, nbr_east, nbr_south, nbr_north, &
+      istart, iend, jstart, jend
     integer :: i, j
-    allocate(x(is:ie), y(ny))
-    allocate(h(is:ie,ny), hn(is:ie,ny), ha(is:ie,ny))
-    allocate(u(is:ie,ny), v(is:ie,ny+1))
-    allocate(b(is:ie,ny))
+
+    if (nbr_west == MPI_PROC_NULL) then
+      is = istart
+    else
+      is = istart - ihalo
+    end if
+    if (nbr_east == MPI_PROC_NULL) then
+      ie = iend
+    else
+      ie = iend + ihalo
+    end if
+    if (nbr_south == MPI_PROC_NULL) then
+      js = jstart
+    else
+      js = jstart - ihalo
+    end if
+    if (nbr_north == MPI_PROC_NULL) then
+      je = jend
+    else
+      je = jend + ihalo
+    end if
+
+    allocate(x(is:ie), y(js:je))
+    allocate(h(is:ie,js:je), hn(is:ie,js:je), ha(is:ie,js:je))
+    allocate(u(is:ie,js:je), v(is:ie,js:jend+1))
+    allocate(b(is:ie,js:je))
 
     !$omp parallel do
-    do i=1,nx
+    do i = is, ie
         x(i) = (i-0.5d0)*dx
     end do
     !$omp end parallel do
     call exchange_halo_x_1d(x)
     !$omp parallel do
-    do j=1,ny
+    do j = js, je
        y(j) = (j-0.5d0)*dy
     end do
     !$omp end parallel do
@@ -61,24 +85,35 @@ contains
   end subroutine finalize_variables
 
   subroutine exchange_halo_x(field)
-    use mpi_decomp_module, only : comm_cart, nbr_west, nbr_east
+    use mpi_decomp_module, only : &
+      comm_cart, nbr_west, nbr_east, nbr_south, nbr_north, &
+      istart, iend, jstart, jend
     use mpi
     real(dp), intent(inout) :: field(is:,:)
-    integer :: ierr, ny_local, cnt
-    integer :: requests(4)
+    integer :: ierr, cntx, cnty
+    integer :: requests(8)
+    real(dp) :: recvbuf(ihalo,jstart:jend,2)
 
-    ny_local = size(field,2)
-    cnt = ny_local
+    cntx = (iend - istart + 1) * ihalo
+    cnty = (jend - jstart + 1) * ihalo
 
-    call MPI_Irecv(field(is,:),   cnt, MPI_DOUBLE_PRECISION, nbr_west, 0, comm_cart, requests(1), ierr)
-    call MPI_Irecv(field(nx+1,:), cnt, MPI_DOUBLE_PRECISION, nbr_east, 1, comm_cart, requests(2), ierr)
-    call MPI_Isend(field(nx,:),   cnt, MPI_DOUBLE_PRECISION, nbr_east, 0, comm_cart, requests(3), ierr)
-    call MPI_Isend(field(1,:),    cnt, MPI_DOUBLE_PRECISION, nbr_west, 1, comm_cart, requests(4), ierr)
-    call MPI_Waitall(4, requests, MPI_STATUSES_IGNORE, ierr)
+    call MPI_Irecv(recvbuf(:,:,1),                 cnty, MPI_DOUBLE_PRECISION, nbr_west,  0, comm_cart, requests(1), ierr)
+    call MPI_Irecv(recvbuf(:,:,2),                 cnty, MPI_DOUBLE_PRECISION, nbr_east,  1, comm_cart, requests(2), ierr)
+    call MPI_Irecv(field(istart:iend,js:jstart-1), cntx, MPI_DOUBLE_PRECISION, nbr_south, 2, comm_cart, requests(3), ierr)
+    call MPI_Irecv(field(istart:iend,jend+1:je),   cntx, MPI_DOUBLE_PRECISION, nbr_north, 3, comm_cart, requests(4), ierr)
+    call MPI_Isend(field(iend-ihalo+1:iend,jstart:jend),     cnty, MPI_DOUBLE_PRECISION, nbr_east,  0, comm_cart, requests(5), ierr)
+    call MPI_Isend(field(istart:istart+ihalo-1,jstart:jend), cnty, MPI_DOUBLE_PRECISION, nbr_west,  1, comm_cart, requests(6), ierr)
+    call MPI_Isend(field(istart:iend,jend-ihalo+1:jend),     cntx, MPI_DOUBLE_PRECISION, nbr_north, 2, comm_cart, requests(7), ierr)
+    call MPI_Isend(field(istart:iend,jstart:jstart+ihalo-1), cntx, MPI_DOUBLE_PRECISION, nbr_south, 3, comm_cart, requests(8), ierr)
+    call MPI_Waitall(8, requests, MPI_STATUSES_IGNORE, ierr)
+    field(is:istart-1,jstart:jend) = recvbuf(:,:,1)
+    field(iend+1:ie,jstart:jend) = recvbuf(:,:,2)
   end subroutine exchange_halo_x
 
   subroutine exchange_halo_x_1d(field)
-    use mpi_decomp_module, only : comm_cart, nbr_west, nbr_east
+    use mpi_decomp_module, only : &
+      comm_cart, nbr_west, nbr_east, &
+      istart, iend
     use mpi
     real(dp), intent(inout) :: field(is:)
     integer :: ierr, cnt
@@ -86,10 +121,10 @@ contains
 
     cnt = ihalo
 
-    call MPI_Irecv(field(is:0),   cnt, MPI_DOUBLE_PRECISION, nbr_west, 0, comm_cart, requests(1), ierr)
-    call MPI_Irecv(field(nx+1:ie), cnt, MPI_DOUBLE_PRECISION, nbr_east, 1, comm_cart, requests(2), ierr)
-    call MPI_Isend(field(nx+1-ihalo:nx), cnt, MPI_DOUBLE_PRECISION, nbr_east, 0, comm_cart, requests(3), ierr)
-    call MPI_Isend(field(1:ihalo),       cnt, MPI_DOUBLE_PRECISION, nbr_west, 1, comm_cart, requests(4), ierr)
+    call MPI_Irecv(field(is:istart-1),   cnt, MPI_DOUBLE_PRECISION, nbr_west, 0, comm_cart, requests(1), ierr)
+    call MPI_Irecv(field(iend+1:ie),     cnt, MPI_DOUBLE_PRECISION, nbr_east, 1, comm_cart, requests(2), ierr)
+    call MPI_Isend(field(iend-ihalo+1:iend),     cnt, MPI_DOUBLE_PRECISION, nbr_east, 0, comm_cart, requests(3), ierr)
+    call MPI_Isend(field(istart:istart+ihalo-1), cnt, MPI_DOUBLE_PRECISION, nbr_west, 1, comm_cart, requests(4), ierr)
     call MPI_Waitall(4, requests, MPI_STATUSES_IGNORE, ierr)
   end subroutine exchange_halo_x_1d
 
