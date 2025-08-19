@@ -89,7 +89,7 @@ contains
       comm_cart, nbr_west, nbr_east, nbr_south, nbr_north, &
       istart, iend, jstart, jend
     use mpi
-    real(dp), intent(inout) :: field(is:,:)
+    real(dp), intent(inout) :: field(is:,js:)
     integer :: ierr, cntx, cnty
     integer :: requests(8)
     real(dp) :: recvbuf(ihalo,jstart:jend,2)
