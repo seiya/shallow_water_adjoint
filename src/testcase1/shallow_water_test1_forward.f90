@@ -13,7 +13,7 @@ program shallow_water_test1_forward
 
   real(dp) :: t, maxerr, l1err, l2err, mse, mass_res
   real(dp) :: t_ad, maxerr_ad, l1err_ad, l2err_ad, mse_ad, mass_res_ad
-  integer :: n
+  integer :: n, i1, i2, j1, j2
   character(len=256) :: carg
   real(dp), allocatable :: un(:,:), vn(:,:)
   real(dp), allocatable :: un_ad(:,:), vn_ad(:,:)
@@ -38,8 +38,16 @@ program shallow_water_test1_forward
      call read_field(h_ad, trim(carg))
   else
      h_ad(:,:) = 0.0_dp
-     h_ad(nx/2-1:nx/2+2,ny/2-1:ny/2+2) = 0.5_dp
-     h_ad(nx/2:nx/2+1,ny/2:ny/2+1) = 1.0_dp
+     i1 = max(nx/2-1, is)
+     i2 = min(nx/2+2, ie)
+     j1 = max(ny/2-1, js)
+     j2 = min(ny/2+2, je)
+     if (i1 <= i2 .and. j1 <= j2) h_ad(i1:i2, j1:j2) = 0.5_dp
+     i1 = max(nx/2, is)
+     i2 = min(nx/2+1, ie)
+     j1 = max(ny/2, js)
+     j2 = min(ny/2+1, je)
+     if (i1 <= i2 .and. j1 <= j2) h_ad(i1:i2, j1:j2) = 1.0_dp
   end if
   u_ad = 0.0_dp
   v_ad = 0.0_dp

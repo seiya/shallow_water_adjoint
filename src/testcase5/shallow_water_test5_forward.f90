@@ -14,7 +14,7 @@ program shallow_water_test5_forward
 
   real(dp) :: t, mass_res, energy_res, wave
   real(dp) :: mass_res_ad, energy_res_ad
-  integer :: n
+  integer :: n, i1, i2, j1, j2
   character(len=256) :: carg
   real(dp), allocatable :: un(:,:), vn(:,:)
   real(dp), allocatable :: un_ad(:,:), vn_ad(:,:)
@@ -42,8 +42,16 @@ program shallow_water_test5_forward
      call read_field(h_ad, trim(carg))
   else
      h_ad = 0.0_dp
-     h_ad(nx/4-1:nx/4+2, ny*3/4-1:ny*3/4+2) = 0.5_dp
-     h_ad(nx/4:nx/4+1, ny*3/4:ny*3/4+1) = 1.0_dp
+     i1 = max(nx/4-1, is)
+     i2 = min(nx/4+2, ie)
+     j1 = max(ny*3/4-1, js)
+     j2 = min(ny*3/4+2, je)
+     if (i1 <= i2 .and. j1 <= j2) h_ad(i1:i2, j1:j2) = 0.5_dp
+     i1 = max(nx/4, is)
+     i2 = min(nx/4+1, ie)
+     j1 = max(ny*3/4, js)
+     j2 = min(ny*3/4+1, je)
+     if (i1 <= i2 .and. j1 <= j2) h_ad(i1:i2, j1:j2) = 1.0_dp
   end if
   call geostrophic_velocity_fwd_ad(u, u_ad, v, v_ad, hgeo, h_ad)
   h = hgeo - b
