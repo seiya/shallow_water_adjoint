@@ -106,8 +106,12 @@ contains
     call MPI_Isend(field(istart:iend,jend-ihalo+1:jend),     cntx, MPI_DOUBLE_PRECISION, nbr_north, 2, comm_cart, requests(7), ierr)
     call MPI_Isend(field(istart:iend,jstart:jstart+ihalo-1), cntx, MPI_DOUBLE_PRECISION, nbr_south, 3, comm_cart, requests(8), ierr)
     call MPI_Waitall(8, requests, MPI_STATUSES_IGNORE, ierr)
-    field(is:istart-1,jstart:jend) = recvbuf(:,:,1)
-    field(iend+1:ie,jstart:jend) = recvbuf(:,:,2)
+    if (nbr_west /= MPI_PROC_NULL) then
+      field(is:istart-1,jstart:jend) = recvbuf(:,:,1)
+    end if
+    if (nbr_east /= MPI_PROC_NULL) then
+      field(iend+1:ie,jstart:jend) = recvbuf(:,:,2)
+    end if
   end subroutine exchange_halo_x
 
   subroutine exchange_halo_x_1d(field)
