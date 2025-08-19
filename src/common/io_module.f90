@@ -1,7 +1,7 @@
 module io_module
   use constants_module, only: dp, sp
   use variables_module, only: nx, ny, day, pi, h, u, v, &
-                              ihalo, is, ie, js, je, exchange_halo_x
+                              ihalo, is, ie, js, je, exchange_halo
   implicit none
 contains
 
@@ -43,7 +43,7 @@ contains
 
     call MPI_File_close(fh, ierr)
     deallocate(buf)
-    call exchange_halo_x(field)
+    call exchange_halo(field)
   end subroutine read_field
 
   !$FAD SKIP
