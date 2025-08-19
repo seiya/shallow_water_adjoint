@@ -7,16 +7,21 @@ module rk4_module
 contains
 
   subroutine rk4_step(h,u,v,hn,un,vn,no_momentum_tendency)
-    real(dp), intent(in) :: h(is:ie,js:je), u(is:ie,js:je), v(is:ie,js:je+1)
+    real(dp), intent(in) :: h(is:ie,js:je), u(is:ie,js:je), v(is:ie,js:jend+1)
     real(dp), intent(out) :: hn(is:ie,js:je), un(is:ie,js:je), vn(is:ie,js:jend+1)
     logical, intent(in), optional :: no_momentum_tendency
-    real(dp) :: k1h(is:ie,js:je), k2h(is:ie,js:je), k3h(is:ie,js:je), k4h(is:ie,js:je)
-    real(dp) :: k1u(is:ie,js:je), k2u(is:ie,js:je), k3u(is:ie,js:je), k4u(is:ie,js:je)
-    real(dp) :: k1v(is:ie,js:jend+1), k2v(is:ie,js:jend+1), k3v(is:ie,js:jend+1), k4v(is:ie,js:jend+1)
-    real(dp) :: htmp(is:ie,js:je), utmp(is:ie,js:je), vtmp(is:ie,js:jend+1)
+    real(dp), allocatable :: k1h(:,:), k2h(:,:), k3h(:,:), k4h(:,:)
+    real(dp), allocatable :: k1u(:,:), k2u(:,:), k3u(:,:), k4u(:,:)
+    real(dp), allocatable :: k1v(:,:), k2v(:,:), k3v(:,:), k4v(:,:)
+    real(dp), allocatable :: htmp(:,:), utmp(:,:), vtmp(:,:)
     logical :: skip_momentum
     skip_momentum = .false.
     if (present(no_momentum_tendency)) skip_momentum = no_momentum_tendency
+
+    allocate(k1h(is:ie,js:je), k2h(is:ie,js:je), k3h(is:ie,js:je), k4h(is:ie,js:je))
+    allocate(k1u(is:ie,js:je), k2u(is:ie,js:je), k3u(is:ie,js:je), k4u(is:ie,js:je))
+    allocate(k1v(is:ie,js:jend+1), k2v(is:ie,js:jend+1), k3v(is:ie,js:jend+1), k4v(is:ie,js:jend+1))
+    allocate(htmp(is:ie,js:je), utmp(is:ie,js:je), vtmp(is:ie,js:jend+1))
 
     if (skip_momentum) then
        call rhs(h, u, v, k1h, k1u, k1v, no_momentum_tendency=.true.)
