@@ -7,7 +7,7 @@ module rk4_module
 contains
 
   subroutine rk4_step(h,u,v,hn,un,vn,no_momentum_tendency)
-    real(dp), intent(in) :: h(is:ie,js:je), u(is:ie,js:je), v(is:ie,js:je+1)
+    real(dp), intent(in) :: h(is:ie,js:je), u(is:ie,js:je), v(is:ie,js:jend+1)
     real(dp), intent(out) :: hn(is:ie,js:je), un(is:ie,js:je), vn(is:ie,js:jend+1)
     logical, intent(in), optional :: no_momentum_tendency
     real(dp), allocatable :: k1h(:,:), k2h(:,:), k3h(:,:), k4h(:,:)

@@ -137,9 +137,9 @@ contains
 
   subroutine rhs(h, u, v, dhdt, dudt, dvdt, no_momentum_tendency)
     use mpi_decomp_module, only: istart, iend, jstart, jend
-    real(dp), intent(in) :: h(is:ie,js:je), u(is:ie,js:je), v(is:ie,js:je+1)
+    real(dp), intent(in) :: h(is:ie,js:je), u(is:ie,js:je), v(is:ie,js:jend+1)
     real(dp), intent(out) :: dhdt(is:ie,js:je)
-    real(dp), intent(out) :: dudt(is:ie,js:je), dvdt(is:ie,js:je+1)
+    real(dp), intent(out) :: dudt(is:ie,js:je), dvdt(is:ie,js:jend+1)
     logical, intent(in), optional :: no_momentum_tendency
     integer :: i,j,jp1,jm1
     real(dp) :: fe,fw,fn,fs,ue,uw,vn,vs
