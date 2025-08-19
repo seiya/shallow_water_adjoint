@@ -18,11 +18,31 @@ contains
   !$FAD SKIP
   subroutine read_field(field, filename)
     !! Read a two-dimensional field from a binary file.
+    use mpi
+    use mpi_decomp_module, only: istart, iend, jstart, jend
     real(dp), intent(out) :: field(is:ie,js:je)
     character(len=*), intent(in) :: filename
-    open(unit=50,file=filename,form='unformatted',access='stream',status='old')
-    read(50) field(1:nx,1:ny)
-    close(50)
+    integer :: fh, ierr
+    integer :: ni, nj, j
+    integer(kind=MPI_Offset_kind) :: offset
+    real(dp), allocatable :: buf(:)
+
+    ni = iend - istart + 1
+    nj = jend - jstart + 1
+
+    allocate(buf(ni))
+    call MPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_RDONLY, MPI_INFO_NULL, fh, ierr)
+    if (ierr /= MPI_SUCCESS) stop 'MPI_File_open failed'
+
+    do j = 0, nj-1
+       offset = int(((jstart - 1 + j) * nx + (istart - 1)), MPI_OFFSET_KIND) * 8_MPI_OFFSET_KIND
+       call MPI_File_read_at_all(fh, offset, buf, ni, MPI_DOUBLE_PRECISION, MPI_STATUS_IGNORE, ierr)
+       if (ierr /= MPI_SUCCESS) stop 'MPI_File_read_at_all failed'
+       field(istart:iend, jstart + j) = buf
+    end do
+
+    call MPI_File_close(fh, ierr)
+    deallocate(buf)
     call exchange_halo_x(field)
   end subroutine read_field
 
