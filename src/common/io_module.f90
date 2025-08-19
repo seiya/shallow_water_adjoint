@@ -36,8 +36,8 @@ contains
 
     do j = 0, nj-1
        offset = int(((jstart - 1 + j) * nx + (istart - 1)), MPI_OFFSET_KIND) * 8_MPI_OFFSET_KIND
-       call MPI_File_read_at_all(fh, offset, buf, ni, MPI_DOUBLE_PRECISION, MPI_STATUS_IGNORE, ierr)
-       if (ierr /= MPI_SUCCESS) stop 'MPI_File_read_at_all failed'
+       call MPI_File_read_at(fh, offset, buf, ni, MPI_DOUBLE_PRECISION, MPI_STATUS_IGNORE, ierr)
+       if (ierr /= MPI_SUCCESS) stop 'MPI_File_read_at failed'
        field(istart:iend, jstart + j) = buf
     end do
 
