@@ -11,7 +11,7 @@ program shallow_water_test2
   real(dp) :: t, maxerr, l1err, l2err, mse, mass_res
   integer :: n
   character(len=256) :: carg
-  real(dp) :: un(is:ie,ny), vn(is:ie,ny+1)
+  real(dp), allocatable :: un(:,:), vn(:,:)
 
   call init_decomp(nx, ny)
   call init_variables()

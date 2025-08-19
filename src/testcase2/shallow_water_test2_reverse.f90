@@ -18,15 +18,16 @@ program shallow_water_test2_reverse
   real(dp) :: mse_ad, mass_res_ad, grad_dot_d
   integer :: n
   character(len=256) :: carg
-  real(dp) :: d(is:ie,ny)
   real(dp), allocatable :: un(:,:), vn(:,:)
   real(dp), allocatable :: un_ad(:,:), vn_ad(:,:)
+  real(dp), allocatable :: d(:,:)
 
   call init_decomp(nx, ny)
   call init_variables()
 
   allocate(un(is:ie,js:je), vn(is:ie,js:jend+1))
   allocate(un_ad(is:ie,js:je), vn_ad(is:ie,js:jend+1))
+  allocate(d(is:ie,js:je))
 
   call read_output_interval(output_interval)
   call write_grid_params()
@@ -85,7 +86,7 @@ program shallow_water_test2_reverse
         end if
      end if
   end do
-  call geostrophic_velocity_rev_ad(u_ad, v_ad, h, h_ad)
+  call geostrophic_velocity_rev_ad(u_ad, v_ad, h_ad)
   call exchange_halo_x(h_ad)
   if (output_interval == 0) then
      call write_snapshot(0, h_ad, u_ad, v_ad)
