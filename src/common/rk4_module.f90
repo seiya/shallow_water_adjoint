@@ -1,6 +1,6 @@
 module rk4_module
   use constants_module, only: dp
-  use variables_module, only: nx, ny, dt, ihalo, is, ie, js, je, exchange_halo_x
+  use variables_module, only: nx, ny, dt, ihalo, is, ie, js, je, exchange_halo
   use equations_module, only: rhs
   use mpi_decomp_module, only: istart, iend, jstart, jend
   implicit none
@@ -21,20 +21,20 @@ contains
     if (skip_momentum) then
        call rhs(h, u, v, k1h, k1u, k1v, no_momentum_tendency=.true.)
        htmp(istart:iend,jstart:jend) = h(istart:iend,jstart:jend) + 0.5d0*dt*k1h(istart:iend,jstart:jend)
-       call exchange_halo_x(htmp)
+       call exchange_halo(htmp)
        call rhs(htmp, u, v, k2h, k2u, k2v, no_momentum_tendency=.true.)
        htmp(istart:iend,jstart:jend) = h(istart:iend,jstart:jend) + 0.5d0*dt*k2h(istart:iend,jstart:jend)
-       call exchange_halo_x(htmp)
+       call exchange_halo(htmp)
        call rhs(htmp, u, v, k3h, k3u, k3v, no_momentum_tendency=.true.)
        htmp(istart:iend,jstart:jend) = h(istart:iend,jstart:jend) + dt*k3h(istart:iend,jstart:jend)
-       call exchange_halo_x(htmp)
+       call exchange_halo(htmp)
        call rhs(htmp, u, v, k4h, k4u, k4v, no_momentum_tendency=.true.)
        hn(istart:iend,jstart:jend) = h(istart:iend,jstart:jend) + dt*(k1h(istart:iend,jstart:jend) + 2.d0*k2h(istart:iend,jstart:jend) + 2.d0*k3h(istart:iend,jstart:jend) + k4h(istart:iend,jstart:jend))/6.d0
        un(istart:iend,jstart:jend) = u(istart:iend,jstart:jend)
        vn(istart:iend,jstart:jend) = v(istart:iend,jstart:jend)
-       call exchange_halo_x(hn)
-       call exchange_halo_x(un)
-       call exchange_halo_x(vn)
+       call exchange_halo(hn)
+       call exchange_halo(un)
+       call exchange_halo(vn)
        return
     end if
 
@@ -42,30 +42,30 @@ contains
     htmp(istart:iend,jstart:jend) = h(istart:iend,jstart:jend) + 0.5d0*dt*k1h(istart:iend,jstart:jend)
     utmp(istart:iend,jstart:jend) = u(istart:iend,jstart:jend) + 0.5d0*dt*k1u(istart:iend,jstart:jend)
     vtmp(istart:iend,jstart:jend) = v(istart:iend,jstart:jend) + 0.5d0*dt*k1v(istart:iend,jstart:jend)
-    call exchange_halo_x(htmp)
-    call exchange_halo_x(utmp)
-    call exchange_halo_x(vtmp)
+    call exchange_halo(htmp)
+    call exchange_halo(utmp)
+    call exchange_halo(vtmp)
     call rhs(htmp, utmp, vtmp, k2h, k2u, k2v, no_momentum_tendency=.false.)
     htmp(istart:iend,jstart:jend) = h(istart:iend,jstart:jend) + 0.5d0*dt*k2h(istart:iend,jstart:jend)
     utmp(istart:iend,jstart:jend) = u(istart:iend,jstart:jend) + 0.5d0*dt*k2u(istart:iend,jstart:jend)
     vtmp(istart:iend,jstart:jend) = v(istart:iend,jstart:jend) + 0.5d0*dt*k2v(istart:iend,jstart:jend)
-    call exchange_halo_x(htmp)
-    call exchange_halo_x(utmp)
-    call exchange_halo_x(vtmp)
+    call exchange_halo(htmp)
+    call exchange_halo(utmp)
+    call exchange_halo(vtmp)
     call rhs(htmp, utmp, vtmp, k3h, k3u, k3v, no_momentum_tendency=.false.)
     htmp(istart:iend,jstart:jend) = h(istart:iend,jstart:jend) + dt*k3h(istart:iend,jstart:jend)
     utmp(istart:iend,jstart:jend) = u(istart:iend,jstart:jend) + dt*k3u(istart:iend,jstart:jend)
     vtmp(istart:iend,jstart:jend) = v(istart:iend,jstart:jend) + dt*k3v(istart:iend,jstart:jend)
-    call exchange_halo_x(htmp)
-    call exchange_halo_x(utmp)
-    call exchange_halo_x(vtmp)
+    call exchange_halo(htmp)
+    call exchange_halo(utmp)
+    call exchange_halo(vtmp)
     call rhs(htmp, utmp, vtmp, k4h, k4u, k4v, no_momentum_tendency=.false.)
     hn(istart:iend,jstart:jend) = h(istart:iend,jstart:jend) + dt*(k1h(istart:iend,jstart:jend) + 2.d0*k2h(istart:iend,jstart:jend) + 2.d0*k3h(istart:iend,jstart:jend) + k4h(istart:iend,jstart:jend))/6.d0
     un(istart:iend,jstart:jend) = u(istart:iend,jstart:jend) + dt*(k1u(istart:iend,jstart:jend) + 2.d0*k2u(istart:iend,jstart:jend) + 2.d0*k3u(istart:iend,jstart:jend) + k4u(istart:iend,jstart:jend))/6.d0
     vn(istart:iend,jstart:jend) = v(istart:iend,jstart:jend) + dt*(k1v(istart:iend,jstart:jend) + 2.d0*k2v(istart:iend,jstart:jend) + 2.d0*k3v(istart:iend,jstart:jend) + k4v(istart:iend,jstart:jend))/6.d0
-    call exchange_halo_x(hn)
-    call exchange_halo_x(un)
-    call exchange_halo_x(vn)
+    call exchange_halo(hn)
+    call exchange_halo(un)
+    call exchange_halo(vn)
   end subroutine rk4_step
 
 end module rk4_module
