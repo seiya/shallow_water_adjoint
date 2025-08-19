@@ -89,7 +89,7 @@ program shallow_water_test1_reverse
         end if
      end if
   end do
-  call exchange_halo_x(h_ad)
+  call exchange_halo(h_ad)
   if (output_interval == 0) then
      call write_snapshot(0, h_ad, u_ad, v_ad)
   end if

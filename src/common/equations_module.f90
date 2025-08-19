@@ -1,7 +1,7 @@
 module equations_module
   use constants_module, only: dp
   use variables_module, only: nx, ny, Lx, Ly, dx, dy, g, radius, u0, f0, h0, h1, pi, b, &
-                               ihalo, is, ie, js, je, exchange_halo_x
+                               ihalo, is, ie, js, je, exchange_halo
   implicit none
 contains
 
@@ -30,7 +30,7 @@ contains
        end do
     end do
     !$omp end parallel do
-    call exchange_halo_x(h)
+    call exchange_halo(h)
   end subroutine init_height
 
   !$FAD SKIP
@@ -49,8 +49,8 @@ contains
     !$omp parallel workshare
     v(:,:) = 0.d0
     !$omp end parallel workshare
-    call exchange_halo_x(u)
-    call exchange_halo_x(v)
+    call exchange_halo(u)
+    call exchange_halo(v)
   end subroutine velocity_field
 
   !$FAD SKIP
@@ -75,7 +75,7 @@ contains
        end do
     end do
     !$omp end parallel do
-    call exchange_halo_x(b)
+    call exchange_halo(b)
   end subroutine init_topography
 
   !$FAD CONSTANT_VARS: y
@@ -92,7 +92,7 @@ contains
        end do
     end do
     !$omp end parallel do
-    call exchange_halo_x(h)
+    call exchange_halo(h)
   end subroutine init_geostrophic_height
 
   subroutine geostrophic_velocity(u, v, h)
@@ -118,8 +118,8 @@ contains
        end do
     end do
     !$omp end parallel do
-    call exchange_halo_x(u)
-    call exchange_halo_x(v)
+    call exchange_halo(u)
+    call exchange_halo(v)
     if (jstart == 1) then
        v(:,1) = 0.0_dp
     end if
