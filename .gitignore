@@ -8,3 +8,7 @@ src/testcase1/run.log
 src/testcase1/grid_params.txt
 src/common/*.mod
 scripts/fautodiff
+
+# Local project config
+.serena/
+.vscode/
