@@ -12,3 +12,4 @@ scripts/fautodiff
 # Local project config
 .serena/
 .vscode/
+.venv/
