@@ -77,7 +77,7 @@ program shallow_water_test5_reverse
   v_ad = 0.d0
 
   call calc_energy_residual_rev_ad(h, h_ad, u, u_ad, v, v_ad, energy_res_ad)
-  call calc_mass_residual_rev_ad(h_ad, mass_res_ad)
+  call calc_mass_residual_rev_ad(h, h_ad, mass_res_ad)
 
   do n = nsteps, 0, -1
      call fautodiff_stack_pop_r(v)
