@@ -1,4 +1,5 @@
 program shallow_water_test2_reverse
+  use mpi
   use constants_module, only: dp
   use cost_module, only: calc_mse, calc_mass_residual
   use cost_module_ad, only: calc_mse_rev_ad, calc_mass_residual_rev_ad, calc_mass_residual_fwd_rev_ad
@@ -11,7 +12,7 @@ program shallow_water_test2_reverse
   use io_module
   use io_module_ad
   use fautodiff_stack
-  use mpi_decomp_module, only: init_decomp, finalize_decomp
+  use mpi_decomp_module, only: init_decomp, finalize_decomp, mpi_rank
   implicit none
 
   real(dp) :: t, mse, mass_res
@@ -21,6 +22,9 @@ program shallow_water_test2_reverse
   real(dp), allocatable :: un(:,:), vn(:,:)
   real(dp), allocatable :: un_ad(:,:), vn_ad(:,:)
   real(dp), allocatable :: d(:,:)
+
+  real(dp) :: h_ad_sum, h_ad_min, h_ad_max
+  integer :: ierr
 
   call init_decomp(nx, ny)
   call init_variables()
@@ -61,7 +65,11 @@ program shallow_water_test2_reverse
 
   call finalize_variables_rev_ad()
 
-  mse_ad = 1.0_dp
+  if (mpi_rank == 0) then
+    mse_ad = 1.0_dp
+  else
+    mse_ad = 0.0_dp
+  end if
   mass_res_ad = 0.0_dp
   h_ad = 0.0_dp
 
@@ -87,13 +95,27 @@ program shallow_water_test2_reverse
      end if
   end do
   call geostrophic_velocity_rev_ad(u_ad, v_ad, h_ad)
-  call exchange_halo(h_ad)
+  call exchange_halo_rev_ad(h_ad)
   if (output_interval == 0) then
      call write_snapshot(0, h_ad, u_ad, v_ad)
   end if
-  grad_dot_d = sum(h_ad*d)
-  print *, sum(h_ad), minval(h_ad), maxval(h_ad)
-  print *, grad_dot_d
+  grad_dot_d = sum(h_ad(istart:iend,jstart:jend)*d(istart:iend,jstart:jend))
+  h_ad_sum = sum(h_ad(istart:iend,jstart:jend))
+  h_ad_min = minval(h_ad(istart:iend,jstart:jend))
+  h_ad_max = maxval(h_ad(istart:iend,jstart:jend))
+  if (mpi_rank == 0) then
+    call MPI_Reduce(MPI_IN_PLACE, h_ad_sum, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
+    call MPI_Reduce(MPI_IN_PLACE, h_ad_min, 1, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD, ierr)
+    call MPI_Reduce(MPI_IN_PLACE, h_ad_max, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD, ierr)
+    call MPI_Reduce(MPI_IN_PLACE, grad_dot_d, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
+    print *, h_ad_sum, h_ad_min, h_ad_max
+    print *, grad_dot_d
+  else
+    call MPI_Reduce(h_ad_sum, 0, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
+    call MPI_Reduce(h_ad_min, 0, 1, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD, ierr)
+    call MPI_Reduce(h_ad_max, 0, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD, ierr)
+    call MPI_Reduce(grad_dot_d, 0, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
+  end if
     call init_variables_rev_ad()
     call finalize_variables()
     call finalize_decomp()

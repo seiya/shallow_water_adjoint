@@ -1,5 +1,6 @@
 import numpy as np
 import subprocess
+import sys
 from pathlib import Path
 
 
@@ -33,6 +34,7 @@ def geostrophic_height(nx, ny):
 
 
 def main():
+    nprocs = int(sys.argv[1]) if len(sys.argv) >= 2 else 4
     build_dir = Path(__file__).resolve().parents[1] / 'build'
     subprocess.run(['make', 'shallow_water_test5_forward.out',
                     'shallow_water_test5_reverse.out'],
@@ -52,12 +54,12 @@ def main():
     save_field(u_file, u)
 
     res = subprocess.run([
-        'mpirun', '--allow-run-as-root', '-n', '4', str(exe_fwd), '-1', str(x_file), str(u_file)
+        'mpirun', '--allow-run-as-root', '-n', str(nprocs), str(exe_fwd), '-1', str(x_file), str(u_file)
     ], check=True, cwd=build_dir, capture_output=True, text=True)
     Ju = float(res.stdout.strip().split()[0])
 
     subprocess.run([
-        'mpirun', '--allow-run-as-root', '-n', '4', str(exe_rev), '0', str(x_file)
+        'mpirun', '--allow-run-as-root', '-n', str(nprocs), str(exe_rev), '0', str(x_file)
     ], check=True, cwd=build_dir, capture_output=True, text=True)
     g = read_snapshot(build_dir / 'snapshot_0000.bin', nx, ny)
 

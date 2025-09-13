@@ -8,7 +8,7 @@ program shallow_water_test1_forward
   use rk4_module
   use rk4_module_ad
   use io_module
-  use mpi_decomp_module, only: init_decomp, finalize_decomp
+  use mpi_decomp_module, only: init_decomp, finalize_decomp, mpi_rank
   implicit none
 
   real(dp) :: t, maxerr, l1err, l2err, mse, mass_res
@@ -72,7 +72,9 @@ program shallow_water_test1_forward
   call calc_mse_fwd_ad(h, h_ad, ha, mse, mse_ad)
   call calc_mass_residual_fwd_ad(h, h_ad, mass_res, mass_res_ad)
   call write_cost_log(mse, mass_res)
-  print *, mse_ad, mass_res_ad
+  if (mpi_rank == 0) then
+     print *, mse_ad, mass_res_ad
+  end if
   call finalize_variables_fwd_ad()
   call finalize_decomp()
 
