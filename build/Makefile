@@ -78,3 +78,21 @@ clean:
 >rm -f *.o *.mod *.out *_ad.f90 *.fadmod fautodiff_stack.f90 mpi_ad.f90
 
 .PRECIOUS: %_ad.f90
+
+variables_module.o: mpi_decomp_module.o
+io_module.o: mpi_decomp_module.o variables_module.o constants_module.o
+equations_module.o: mpi_decomp_module.o variables_module.o constants_module.o
+cost_module.o: mpi_decomp_module.o variables_module.o constants_module.o
+rk4_module.o: mpi_decomp_module.o equations_module.o variables_module.o constants_module.o
+
+variables_module_ad.o: variables_module.o mpi_decomp_module_ad.o
+io_module_ad.o: io_module.o mpi_decomp_module_ad.o variables_module_ad.o constants_module_ad.o
+equations_module_ad.o: equations_module.o mpi_decomp_module_ad.o variables_module_ad.o constants_module_ad.o
+cost_module_ad.o: cost_module.o mpi_decomp_module_ad.o variables_module_ad.o constants_module_ad.o
+rk4_module_ad.o: rk4_module.o mpi_decomp_module_ad.o equations_module_ad.o variables_module_ad.o constants_module_ad.o
+
+variables_module_ad.f90: mpi_decomp_module_ad.f90
+io_module_ad.f90: mpi_decomp_module_ad.f90 variables_module_ad.f90 constants_module_ad.f90
+equations_module_ad.f90: mpi_decomp_module_ad.f90 variables_module_ad.f90 constants_module_ad.f90
+cost_module_ad.f90: mpi_decomp_module_ad.f90 variables_module_ad.f90 constants_module_ad.f90
+rk4_module_ad.f90: mpi_decomp_module_ad.f90 equations_module_ad.f90 variables_module_ad.f90 constants_module_ad.f90
