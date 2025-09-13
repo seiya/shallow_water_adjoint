@@ -1,5 +1,6 @@
 import numpy as np
 import subprocess
+import sys
 from pathlib import Path
 
 
@@ -47,7 +48,8 @@ def main():
     save_field(x_file, x)
     save_field(d_file, d)
 
-    subprocess.run(['mpirun', '--allow-run-as-root', '-n', '4', str(exe_base), '0', str(x_file)],
+    nproc = int(sys.argv[1]) if len(sys.argv) >= 2 else 4
+    subprocess.run(['mpirun', '--allow-run-as-root', '-n', str(nproc), str(exe_base), '0', str(x_file)],
                    check=True, cwd=build_dir)
     F0 = read_cost(build_dir / 'cost.log')
 
@@ -57,17 +59,17 @@ def main():
         x_eps = x + eps * d
         x_eps_file = build_dir / f'x_eps_{i}.bin'
         save_field(x_eps_file, x_eps)
-        subprocess.run(['mpirun', '--allow-run-as-root', '-n', '4', str(exe_base), '0', str(x_eps_file)],
+        subprocess.run(['mpirun', '--allow-run-as-root', '-n', str(nproc), str(exe_base), '0', str(x_eps_file)],
                        check=True, cwd=build_dir)
         Fe = read_cost(build_dir / 'cost.log')
         diffs.append((Fe - F0) / eps)
     diffs = np.array(diffs)
 
-    res = subprocess.run(['mpirun', '--allow-run-as-root', '-n', '4', str(exe_fwd), '0', str(x_file), str(d_file)],
+    res = subprocess.run(['mpirun', '--allow-run-as-root', '-n', str(nproc), str(exe_fwd), '0', str(x_file), str(d_file)],
                          check=True, cwd=build_dir, capture_output=True, text=True)
     mse_ad = float(res.stdout.strip().split()[0])
 
-    res = subprocess.run(['mpirun', '--allow-run-as-root', '-n', '4', str(exe_rev), '0', str(x_file), str(d_file)],
+    res = subprocess.run(['mpirun', '--allow-run-as-root', '-n', str(nproc), str(exe_rev), '0', str(x_file), str(d_file)],
                          check=True, cwd=build_dir, capture_output=True, text=True)
     lines = res.stdout.strip().splitlines()
     grad_dot_d = float(lines[-1].split()[0])

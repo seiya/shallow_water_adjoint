@@ -9,7 +9,7 @@ program shallow_water_test5_forward
   use rk4_module
   use rk4_module_ad
   use io_module
-  use mpi_decomp_module, only: init_decomp, finalize_decomp
+  use mpi_decomp_module, only: init_decomp, finalize_decomp, mpi_rank
   implicit none
 
   real(dp) :: t, mass_res, energy_res, wave
@@ -78,7 +78,9 @@ program shallow_water_test5_forward
   call calc_energy_residual_fwd_ad(h, h_ad, u, u_ad, v, v_ad, energy_res, energy_res_ad)
   wave = calc_wave_pattern(h)
   call write_cost_log2(mass_res, energy_res, wave)
-  print *, energy_res_ad, mass_res_ad, 0.d0
+  if (mpi_rank == 0) then
+     print *, energy_res_ad, mass_res_ad, 0.d0
+  end if
   call finalize_variables_fwd_ad()
   call finalize_decomp()
 end program shallow_water_test5_forward

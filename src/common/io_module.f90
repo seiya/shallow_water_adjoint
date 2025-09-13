@@ -32,7 +32,7 @@ contains
 
     allocate(buf(ni))
     call MPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_RDONLY, MPI_INFO_NULL, fh, ierr)
-    if (ierr /= MPI_SUCCESS) stop 'MPI_File_open failed'
+    if (ierr /= MPI_SUCCESS) stop 'MPI_File_open failed: '//trim(filename)
 
     do j = 0, nj-1
        offset = int(((jstart - 1 + j) * nx + (istart - 1)), MPI_OFFSET_KIND) * 8_MPI_OFFSET_KIND
