@@ -102,12 +102,17 @@ program shallow_water_test5_reverse
      end if
      if (output_interval > 0) then
         if (mod(n, output_interval) == 0) then
+           call exchange_halo_rev_ad(h_ad)
+           call exchange_halo_rev_ad(u_ad)
+           call exchange_halo_rev_ad(v_ad)
            call write_snapshot(n, h_ad, u_ad, v_ad)
         end if
      end if
   end do
   call geostrophic_velocity_rev_ad(u_ad, v_ad, h_ad)
   call exchange_halo_rev_ad(h_ad)
+  call exchange_halo_rev_ad(u_ad)
+  call exchange_halo_rev_ad(v_ad)
   if (output_interval == 0) then
      call write_snapshot(0, h_ad, u_ad, v_ad)
   end if

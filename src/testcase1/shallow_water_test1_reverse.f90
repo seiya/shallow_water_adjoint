@@ -85,9 +85,10 @@ program shallow_water_test1_reverse
      end if
      if (output_interval > 0) then
         if (mod(n, output_interval) == 0) then
-          u_ad = 0.0
-          v_ad = 0.0
-          call write_snapshot(n, h_ad, u_ad, v_ad)
+           call exchange_halo_rev_ad(h_ad)
+           u_ad = 0.0
+           v_ad = 0.0
+           call write_snapshot(n, h_ad, u_ad, v_ad)
         end if
      end if
   end do
