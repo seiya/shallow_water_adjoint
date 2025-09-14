@@ -50,11 +50,23 @@ contains
 
     jstartv = max(jstart, 2)
     call rhs(h, u, v, k1h, k1u, k1v, no_momentum_tendency=.false.)
-    !$omp parallel workshare
+    !$omp parallel
+    !$omp workshare
     htmp(istart:iend,jstart:jend) = h(istart:iend,jstart:jend) + 0.5d0*dt*k1h(istart:iend,jstart:jend)
     utmp(istart:iend,jstart:jend) = u(istart:iend,jstart:jend) + 0.5d0*dt*k1u(istart:iend,jstart:jend)
     vtmp(istart:iend,jstartv:jend) = v(istart:iend,jstartv:jend) + 0.5d0*dt*k1v(istart:iend,jstartv:jend)
-    !$omp end parallel workshare
+    !$omp end workshare
+    if (js == jstart) then
+      !$omp workshare
+      vtmp(istart:iend,js) = 0.0_dp
+      !$omp end workshare
+    end if
+    if (je == jend) then
+      !$omp workshare
+      vtmp(istart:iend,je+1) = 0.0_dp
+      !$omp end workshare
+    end if
+    !$omp end parallel
     call exchange_halo(htmp)
     call exchange_halo(utmp)
     call exchange_halo(vtmp)
@@ -77,11 +89,23 @@ contains
     call exchange_halo(utmp)
     call exchange_halo(vtmp)
     call rhs(htmp, utmp, vtmp, k4h, k4u, k4v, no_momentum_tendency=.false.)
-    !$omp parallel workshare
+    !$omp parallel
+    !$omp workshare
     hn(istart:iend,jstart:jend) = h(istart:iend,jstart:jend) + dt*(k1h(istart:iend,jstart:jend) + 2.d0*k2h(istart:iend,jstart:jend) + 2.d0*k3h(istart:iend,jstart:jend) + k4h(istart:iend,jstart:jend))/6.d0
     un(istart:iend,jstart:jend) = u(istart:iend,jstart:jend) + dt*(k1u(istart:iend,jstart:jend) + 2.d0*k2u(istart:iend,jstart:jend) + 2.d0*k3u(istart:iend,jstart:jend) + k4u(istart:iend,jstart:jend))/6.d0
     vn(istart:iend,jstartv:jend) = v(istart:iend,jstartv:jend) + dt*(k1v(istart:iend,jstartv:jend) + 2.d0*k2v(istart:iend,jstartv:jend) + 2.d0*k3v(istart:iend,jstartv:jend) + k4v(istart:iend,jstartv:jend))/6.d0
-    !$omp end parallel workshare
+    !$omp end workshare
+    if (js == jstart) then
+      !$omp workshare
+      vn(istart:iend,js) = 0.0_dp
+      !$omp end workshare
+    end if
+    if (je == jend) then
+      !$omp workshare
+      vn(istart:iend,je+1) = 0.0_dp
+      !$omp end workshare
+    end if
+    !$omp end parallel
     call exchange_halo(hn)
     call exchange_halo(un)
     call exchange_halo(vn)
