@@ -24,11 +24,10 @@ program shallow_water_test2
   if (command_argument_count() >= 2) then
      call get_command_argument(2, carg)
      call read_field(h, trim(carg))
-     ha = h
   else
      call init_geostrophic_height(h, y)
-     ha = h
   end if
+  ha = h
 
   call geostrophic_velocity(u, v, h)
   mass_res = calc_mass_residual(h)

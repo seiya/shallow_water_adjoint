@@ -91,17 +91,15 @@ contains
     use mpi
     real(dp), intent(inout) :: field(is:,js:)
     integer :: ierr, cntx, cnty, nx_loc, ny_loc
-    integer :: requests(8)
-    real(dp), allocatable :: recvbufx(:,:,:), recvbufy(:,:,:)
-    real(dp), allocatable :: sendbufx(:,:,:), sendbufy(:,:,:)
+    integer :: requests(4)
+    real(dp), allocatable :: recvbufy(:,:,:)
+    real(dp), allocatable :: sendbufy(:,:,:)
 
-    nx_loc = iend - istart + 1
+    nx_loc = ie - is + 1
     ny_loc = jend - jstart + 1
     cntx = nx_loc * ihalo
     cnty = ny_loc * ihalo
 
-    allocate(recvbufx(nx_loc, ihalo, 2))
-    allocate(sendbufx(nx_loc, ihalo, 2))
     allocate(recvbufy(ihalo, ny_loc, 2))
     allocate(sendbufy(ihalo, ny_loc, 2))
 
@@ -110,25 +108,15 @@ contains
     if (nbr_west /= MPI_PROC_NULL) then
       sendbufy(:,:,1) = field(istart:istart+ihalo-1, jstart:jend)
       call MPI_Irecv(recvbufy(:,:,1), cnty, MPI_DOUBLE_PRECISION, nbr_west,  0, comm_cart, requests(1), ierr)
-      call MPI_Isend(sendbufy(:,:,1), cnty, MPI_DOUBLE_PRECISION, nbr_west,  1, comm_cart, requests(6), ierr)
+      call MPI_Isend(sendbufy(:,:,1), cnty, MPI_DOUBLE_PRECISION, nbr_west,  1, comm_cart, requests(2), ierr)
     end if
     if (nbr_east /= MPI_PROC_NULL) then
       sendbufy(:,:,2) = field(iend-ihalo+1:iend,    jstart:jend)
-      call MPI_Irecv(recvbufy(:,:,2), cnty, MPI_DOUBLE_PRECISION, nbr_east,  1, comm_cart, requests(2), ierr)
-      call MPI_Isend(sendbufy(:,:,2), cnty, MPI_DOUBLE_PRECISION, nbr_east,  0, comm_cart, requests(5), ierr)
-    end if
-    if (nbr_south /= MPI_PROC_NULL) then
-      sendbufx(:,:,1) = field(istart:iend, jstart:jstart+ihalo-1)
-      call MPI_Irecv(recvbufx(:,:,1), cntx, MPI_DOUBLE_PRECISION, nbr_south, 2, comm_cart, requests(3), ierr)
-      call MPI_Isend(sendbufx(:,:,1), cntx, MPI_DOUBLE_PRECISION, nbr_south, 3, comm_cart, requests(8), ierr)
-    end if
-    if (nbr_north /= MPI_PROC_NULL) then
-      sendbufx(:,:,2) = field(istart:iend, jend-ihalo+1:jend)
-      call MPI_Irecv(recvbufx(:,:,2), cntx, MPI_DOUBLE_PRECISION, nbr_north, 3, comm_cart, requests(4), ierr)
-      call MPI_Isend(sendbufx(:,:,2), cntx, MPI_DOUBLE_PRECISION, nbr_north, 2, comm_cart, requests(7), ierr)
+      call MPI_Irecv(recvbufy(:,:,2), cnty, MPI_DOUBLE_PRECISION, nbr_east,  1, comm_cart, requests(3), ierr)
+      call MPI_Isend(sendbufy(:,:,2), cnty, MPI_DOUBLE_PRECISION, nbr_east,  0, comm_cart, requests(4), ierr)
     end if
 
-    call MPI_Waitall(8, requests, MPI_STATUSES_IGNORE, ierr)
+    call MPI_Waitall(4, requests, MPI_STATUSES_IGNORE, ierr)
 
     if (nbr_west /= MPI_PROC_NULL) then
       field(is:istart-1,jstart:jend) = recvbufy(:,:,1)
@@ -136,15 +124,21 @@ contains
     if (nbr_east /= MPI_PROC_NULL) then
       field(iend+1:ie,jstart:jend) = recvbufy(:,:,2)
     end if
+    deallocate(recvbufy, sendbufy)
+
+    requests(:) = MPI_REQUEST_NULL
+
     if (nbr_south /= MPI_PROC_NULL) then
-      field(istart:iend,js:jstart-1) = recvbufx(:,:,1)
+      call MPI_Irecv(field(:,js:jstart-1),           cntx, MPI_DOUBLE_PRECISION, nbr_south, 2, comm_cart, requests(1), ierr)
+      call MPI_Isend(field(:,jstart:jstart+ihalo-1), cntx, MPI_DOUBLE_PRECISION, nbr_south, 3, comm_cart, requests(2), ierr)
     end if
     if (nbr_north /= MPI_PROC_NULL) then
-      field(istart:iend,jend+1:je) = recvbufx(:,:,2)
+      call MPI_Irecv(field(:,jend+1:je),         cntx, MPI_DOUBLE_PRECISION, nbr_north, 3, comm_cart, requests(3), ierr)
+      call MPI_Isend(field(:,jend-ihalo+1:jend), cntx, MPI_DOUBLE_PRECISION, nbr_north, 2, comm_cart, requests(4), ierr)
     end if
 
-    deallocate(recvbufx, sendbufx)
-    deallocate(recvbufy, sendbufy)
+    call MPI_Waitall(4, requests, MPI_STATUSES_IGNORE, ierr)
+
   end subroutine exchange_halo
 
   subroutine exchange_halo_x_1d(field)

@@ -73,9 +73,13 @@ contains
   subroutine write_snapshot(n, h, u, v)
     use mpi
     use mpi_decomp_module, only: istart, iend, jstart, jend
+    use variables_module, only: exchange_halo
     integer, intent(in) :: n
     real(dp), intent(in) :: h(is:ie,js:je)
-    real(dp), intent(in) :: u(is:ie,js:je), v(is:ie,js:jend+1)
+    real(dp), intent(in) :: u(is:ie,js:je)
+    real(dp), intent(in) :: v(is:ie,js:jend+1)
+    real(dp) :: utmp(is:ie,js:je)
+    real(dp) :: vtmp(is:ie,js:jend+1)
     real(sp) :: hsp(istart:iend,jstart:jend)
     real(sp) :: usp(istart:iend,jstart:jend)
     real(sp) :: vsp(istart:iend,jstart:jend)
@@ -84,11 +88,15 @@ contains
     integer :: fh, newtype, ierr
     integer(kind=MPI_Offset_kind) :: disp
     integer :: i, j
+    utmp(:,:) = u(:,:)
+    vtmp(:,:) = v(:,:)
+    call exchange_halo(utmp)
+    call exchange_halo(vtmp)
     do j = jstart, jend
       do i = istart, iend
         hsp(i,j) = real(h(i,j), sp)
-        usp(i,j) = real(0.5d0 * (u(i,j) + u(i+1,j)), sp)
-        vsp(i,j) = real(0.5d0 * (v(i,j) + v(i,j+1)), sp)
+        usp(i,j) = real(0.5d0 * (utmp(i,j) + utmp(i+1,j)), sp)
+        vsp(i,j) = real(0.5d0 * (vtmp(i,j) + vtmp(i,j+1)), sp)
       end do
     end do
     ni = iend - istart + 1

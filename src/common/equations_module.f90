@@ -212,8 +212,6 @@ contains
     do j = max(jstart, 2), jend
        jp1 = j+1
        jm1 = j-1
-       ! Iterate over the local i-range for MPI domain decomposition.
-       ! Halo exchanges ensure neighbor access (i±1) is valid.
        do i = istart, iend
           h_n = h(i,j) + b(i,j)
           h_s = h(i,jm1) + b(i,jm1)
