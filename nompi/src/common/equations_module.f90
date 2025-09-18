@@ -102,7 +102,7 @@ contains
     end do
     !$omp end parallel do
     !$omp parallel do private(ip1,im1,jm1)
-    do j = 2, ny - 1
+    do j = 2, ny
        jm1 = j - 1
        do i = 1, nx
           ip1 = modulo(i, nx) + 1
@@ -201,7 +201,7 @@ contains
 
     ! meridional momentum
     !$omp parallel do private(ip1,im1,jp1,jm1,h_n,h_s,u_avg)
-    do j = 2, ny - 1
+    do j = 2, ny
        jp1 = j+1
        jm1 = j-1
        do i = 1, nx
