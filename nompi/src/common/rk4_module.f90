@@ -1,0 +1,79 @@
+module rk4_module
+  use constants_module, only: dp
+  use variables_module, only: nx, ny, dt
+  use equations_module, only: rhs
+  implicit none
+contains
+
+  subroutine rk4_step(h,u,v,hn,un,vn,no_momentum_tendency)
+    real(dp), intent(in) :: h(nx,ny), u(nx,ny), v(nx,ny+1)
+    real(dp), intent(out) :: hn(nx,ny), un(nx,ny), vn(nx,ny+1)
+    logical, intent(in), optional :: no_momentum_tendency
+    real(dp), allocatable :: k1h(:,:), k2h(:,:), k3h(:,:), k4h(:,:)
+    real(dp), allocatable :: k1u(:,:), k2u(:,:), k3u(:,:), k4u(:,:)
+    real(dp), allocatable :: k1v(:,:), k2v(:,:), k3v(:,:), k4v(:,:)
+    real(dp), allocatable :: htmp(:,:), utmp(:,:), vtmp(:,:)
+    logical :: skip_momentum
+    skip_momentum = .false.
+    if (present(no_momentum_tendency)) skip_momentum = no_momentum_tendency
+
+    allocate(k1h(nx,ny), k2h(nx,ny), k3h(nx,ny), k4h(nx,ny))
+    allocate(k1u(nx,ny), k2u(nx,ny), k3u(nx,ny), k4u(nx,ny))
+    allocate(k1v(nx,ny+1), k2v(nx,ny+1), k3v(nx,ny+1), k4v(nx,ny+1))
+    allocate(htmp(nx,ny), utmp(nx,ny), vtmp(nx,ny+1))
+
+    if (skip_momentum) then
+       call rhs(h, u, v, k1h, k1u, k1v, no_momentum_tendency=.true.)
+       !$omp parallel workshare
+       htmp(:,:) = h(:,:) + 0.5d0*dt*k1h(:,:)
+       !$omp end parallel workshare
+       call rhs(htmp, u, v, k2h, k2u, k2v, no_momentum_tendency=.true.)
+       !$omp parallel workshare
+       htmp(:,:) = h(:,:) + 0.5d0*dt*k2h(:,:)
+       !$omp end parallel workshare
+       call rhs(htmp, u, v, k3h, k3u, k3v, no_momentum_tendency=.true.)
+       !$omp parallel workshare
+       htmp(:,:) = h(:,:) + dt*k3h(:,:)
+       !$omp end parallel workshare
+       call rhs(htmp, u, v, k4h, k4u, k4v, no_momentum_tendency=.true.)
+       !$omp parallel workshare
+       hn(:,:) = h(:,:) + dt*(k1h(:,:) + 2.d0*k2h(:,:) + 2.d0*k3h(:,:) + k4h(:,:))/6.d0
+       !$omp end parallel workshare
+       return
+    end if
+
+    call rhs(h, u, v, k1h, k1u, k1v, no_momentum_tendency=.false.)
+    !$omp parallel
+    !$omp workshare
+    htmp(:,:) = h(:,:) + 0.5d0*dt*k1h(:,:)
+    utmp(:,:) = u(:,:) + 0.5d0*dt*k1u(:,:)
+    vtmp(:,2:ny) = v(:,2:ny) + 0.5d0*dt*k1v(:,2:ny)
+    vtmp(:,1) = 0.0_dp
+    vtmp(:,ny+1) = 0.0_dp
+    !$omp end workshare
+    !$omp end parallel
+    call rhs(htmp, utmp, vtmp, k2h, k2u, k2v, no_momentum_tendency=.false.)
+    !$omp parallel workshare
+    htmp(:,:) = h(:,:) + 0.5d0*dt*k2h(:,:)
+    utmp(:,:) = u(:,:) + 0.5d0*dt*k2u(:,:)
+    vtmp(:,2:ny) = v(:,2:ny) + 0.5d0*dt*k2v(:,2:ny)
+    !$omp end parallel workshare
+    call rhs(htmp, utmp, vtmp, k3h, k3u, k3v, no_momentum_tendency=.false.)
+    !$omp parallel workshare
+    htmp(:,:) = h(:,:) + dt*k3h(:,:)
+    utmp(:,:) = u(:,:) + dt*k3u(:,:)
+    vtmp(:,2:ny) = v(:,2:ny) + dt*k3v(:,2:ny)
+    !$omp end parallel workshare
+    call rhs(htmp, utmp, vtmp, k4h, k4u, k4v, no_momentum_tendency=.false.)
+    !$omp parallel
+    !$omp workshare
+    hn(:,:) = h(:,:) + dt*(k1h(:,:) + 2.d0*k2h(:,:) + 2.d0*k3h(:,:) + k4h(:,:))/6.d0
+    un(:,:) = u(:,:) + dt*(k1u(:,:) + 2.d0*k2u(:,:) + 2.d0*k3u(:,:) + k4u(:,:))/6.d0
+    vn(:,2:ny) = v(:,2:ny) + dt*(k1v(:,2:ny) + 2.d0*k2v(:,2:ny) + 2.d0*k3v(:,2:ny) + k4v(:,2:ny))/6.d0
+    vn(:,1) = 0.0_dp
+    vn(:,ny+1) = 0.0_dp
+    !$omp end workshare
+    !$omp end parallel
+  end subroutine rk4_step
+
+end module rk4_module
