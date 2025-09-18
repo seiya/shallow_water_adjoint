@@ -17,7 +17,7 @@ def run_once(executable: str, threads: int, numa_node: int | None = None) -> tup
     env["OMP_NUM_THREADS"] = str(threads)
     env["GOMP_CPU_AFFINITY"] = f"0-{threads - 1}"
 
-    cmd = [executable]
+    cmd = [os.path.abspath(executable)]
     if numa_node is not None and shutil.which("numactl"):
         cpu_range = f"0-{threads - 1}"
         cmd = ["numactl", f"--cpunodebind={numa_node}", f"--physcpubind={cpu_range}", executable]
