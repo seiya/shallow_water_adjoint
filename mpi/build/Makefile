@@ -63,16 +63,15 @@ mpi_ad.o: mpi_ad.f90
 >$(FC) $(FFLAGS) -c $< -o $@
 
 %_ad.f90: %.f90 $(FAUTODIFF_SRC) | update_fautodiff
->../scripts/fautodiff/bin/fautodiff $< -I . -M . -o $@
+>../../scripts/fautodiff/bin/fautodiff $< -I . -M . -o $@
 
 ad: update_fautodiff
 
 update_fautodiff:
->../scripts/setup_fautodiff.sh
->../scripts/copy_fautodiff_modules.sh
+>../../scripts/setup_fautodiff.sh
 
 $(FAUTODIFF_SRC): | update_fautodiff
->../scripts/copy_fautodiff_modules.sh
+>../../scripts/copy_fautodiff_modules.sh
 
 clean:
 >rm -f *.o *.mod *.out *_ad.f90 *.fadmod fautodiff_stack.f90 mpi_ad.f90
