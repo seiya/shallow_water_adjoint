@@ -5,7 +5,7 @@ program shallow_water_test5
   use equations_module
   use rk4_module
   use io_module
-  use mpi_decomp_module, only: init_decomp, finalize_decomp
+  use mpi_decomp_module, only: init_decomp, finalize_decomp, jend
   implicit none
 
   real(dp) :: t, mass_res, energy_res, wave

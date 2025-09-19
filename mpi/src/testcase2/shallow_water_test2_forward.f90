@@ -9,7 +9,7 @@ program shallow_water_test2_forward
   use rk4_module
   use rk4_module_ad
   use io_module
-  use mpi_decomp_module, only: init_decomp, finalize_decomp, mpi_rank
+  use mpi_decomp_module, only: init_decomp, finalize_decomp, mpi_rank, jend
   implicit none
 
   real(dp) :: t, mse, mass_res
