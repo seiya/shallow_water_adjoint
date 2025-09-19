@@ -55,9 +55,6 @@ shallow_water_test5_reverse.out: ../src/testcase5/shallow_water_test5_reverse.f9
 %_ad.o: %_ad.f90 $(FAUTODIFF_OBJS)
 >$(FC) $(FFLAGS) -c $< -o $@
 
-mpi_ad.o: mpi_ad.f90
->$(FC) $(FFLAGS) -c $< -o $@
-
 %.o: %.f90
 >$(FC) $(FFLAGS) -c $< -o $@
 

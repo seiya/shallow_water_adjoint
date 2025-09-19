@@ -92,6 +92,8 @@ contains
     real(dp), intent(inout) :: field(is:,js:)
     integer :: ierr, cntx, cnty, nx_loc, ny_loc
     integer :: requests(4)
+    real(dp), allocatable :: recvbufx(:,:,:)
+    real(dp), allocatable :: sendbufx(:,:,:)
     real(dp), allocatable :: recvbufy(:,:,:)
     real(dp), allocatable :: sendbufy(:,:,:)
 
@@ -100,6 +102,8 @@ contains
     cntx = nx_loc * ihalo
     cnty = ny_loc * ihalo
 
+    allocate(recvbufx(nx_loc, ihalo, 2))
+    allocate(sendbufx(nx_loc, ihalo, 2))
     allocate(recvbufy(ihalo, ny_loc, 2))
     allocate(sendbufy(ihalo, ny_loc, 2))
 
@@ -129,15 +133,25 @@ contains
     requests(:) = MPI_REQUEST_NULL
 
     if (nbr_south /= MPI_PROC_NULL) then
-      call MPI_Irecv(field(:,js:jstart-1),           cntx, MPI_DOUBLE_PRECISION, nbr_south, 2, comm_cart, requests(1), ierr)
-      call MPI_Isend(field(:,jstart:jstart+ihalo-1), cntx, MPI_DOUBLE_PRECISION, nbr_south, 3, comm_cart, requests(2), ierr)
+      sendbufx(:,:,1) = field(:,jstart:jstart+ihalo-1)
+      call MPI_Irecv(recvbufx(:,:,1), cntx, MPI_DOUBLE_PRECISION, nbr_south, 2, comm_cart, requests(1), ierr)
+      call MPI_Isend(sendbufx(:,:,1), cntx, MPI_DOUBLE_PRECISION, nbr_south, 3, comm_cart, requests(2), ierr)
     end if
     if (nbr_north /= MPI_PROC_NULL) then
-      call MPI_Irecv(field(:,jend+1:je),         cntx, MPI_DOUBLE_PRECISION, nbr_north, 3, comm_cart, requests(3), ierr)
-      call MPI_Isend(field(:,jend-ihalo+1:jend), cntx, MPI_DOUBLE_PRECISION, nbr_north, 2, comm_cart, requests(4), ierr)
+      sendbufx(:,:,2) = field(:,jend-ihalo+1:jend)
+      call MPI_Irecv(recvbufx(:,:,2), cntx, MPI_DOUBLE_PRECISION, nbr_north, 3, comm_cart, requests(3), ierr)
+      call MPI_Isend(sendbufx(:,:,2), cntx, MPI_DOUBLE_PRECISION, nbr_north, 2, comm_cart, requests(4), ierr)
     end if
 
     call MPI_Waitall(4, requests, MPI_STATUSES_IGNORE, ierr)
+
+    if (nbr_south /= MPI_PROC_NULL) then
+      field(:,js:jstart-1) = recvbufx(:,:,1)
+    end if
+    if (nbr_north /= MPI_PROC_NULL) then
+      field(:,jend+1:je) = recvbufx(:,:,2)
+    end if
+    deallocate(recvbufx, sendbufx)
 
   end subroutine exchange_halo
 

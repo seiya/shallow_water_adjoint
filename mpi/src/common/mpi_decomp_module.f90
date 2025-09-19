@@ -1,8 +1,6 @@
 module mpi_decomp_module
-  use mpi, only : MPI_COMM_WORLD, MPI_Init, MPI_Comm_rank, MPI_Comm_size, MPI_Dims_create, &
-       MPI_Cart_create, MPI_Cart_coords, MPI_Cart_shift, MPI_Comm_free, MPI_Finalize
+  use mpi
   implicit none
-  integer, parameter :: MPI_COMM_NULL = 0
   integer :: comm_cart = MPI_COMM_NULL
   integer :: mpi_rank = -1, mpi_size = 0
   integer :: dims(2) = 0, coords(2) = 0

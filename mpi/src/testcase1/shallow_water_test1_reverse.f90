@@ -12,7 +12,7 @@ program shallow_water_test1_reverse
   use io_module
   use io_module_ad
   use fautodiff_stack
-  use mpi_decomp_module, only: init_decomp, finalize_decomp, mpi_rank
+  use mpi_decomp_module, only: init_decomp, finalize_decomp, mpi_rank, jend
   implicit none
 
   real(dp) :: t, maxerr, l1err, l2err, mse, mass_res
