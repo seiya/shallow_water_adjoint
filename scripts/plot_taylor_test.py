@@ -15,8 +15,7 @@ def main():
     )
     args = parser.parse_args()
 
-    build_dir = Path(__file__).resolve().parents[1] / "build"
-    data = np.load(build_dir / f"taylor_test{args.test}_results.npz")
+    data = np.load(f"taylor_test{args.test}_results.npz")
     eps = data["eps"]
     fwd = data["fwd"]
     rev = data["rev"]
@@ -27,7 +26,7 @@ def main():
     plt.ylabel("error")
     plt.legend()
     plt.grid(True, which="both")
-    plt.savefig(build_dir / f"taylor_test{args.test}_convergence.png")
+    plt.savefig(f"taylor_test{args.test}_convergence.png")
 
 
 if __name__ == "__main__":
