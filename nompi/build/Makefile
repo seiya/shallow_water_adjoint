@@ -74,19 +74,19 @@ clean:
 
 .PRECIOUS: %_ad.f90
 
-variables_module.o:
+variables_module.o: constants_module.o
 io_module.o: variables_module.o constants_module.o
 equations_module.o: variables_module.o constants_module.o
 cost_module.o: variables_module.o constants_module.o
 rk4_module.o: equations_module.o variables_module.o constants_module.o
 
-variables_module_ad.o: variables_module.o
+variables_module_ad.o: variables_module.o constants_module_ad.o
 io_module_ad.o: io_module.o variables_module_ad.o constants_module_ad.o
 equations_module_ad.o: equations_module.o variables_module_ad.o constants_module_ad.o
 cost_module_ad.o: cost_module.o variables_module_ad.o constants_module_ad.o
 rk4_module_ad.o: rk4_module.o equations_module_ad.o variables_module_ad.o constants_module_ad.o
 
-variables_module_ad.f90:
+variables_module_ad.f90: constants_module_ad.f90
 io_module_ad.f90: variables_module_ad.f90 constants_module_ad.f90
 equations_module_ad.f90: variables_module_ad.f90 constants_module_ad.f90
 cost_module_ad.f90: variables_module_ad.f90 constants_module_ad.f90

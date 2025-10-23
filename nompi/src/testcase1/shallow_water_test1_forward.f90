@@ -1,13 +1,10 @@
 program shallow_water_test1_forward
-  use constants_module, only: dp
+  use constants_module_ad, only: dp
   use cost_module_ad, only: calc_mse_fwd_ad, calc_mass_residual_fwd_ad, calc_error_norms_fwd_ad
-  use variables_module
   use variables_module_ad
-  use equations_module
   use equations_module_ad
-  use rk4_module
   use rk4_module_ad
-  use io_module
+  use io_module_ad
   implicit none
 
   real(dp) :: t, maxerr, l1err, l2err, mse, mass_res

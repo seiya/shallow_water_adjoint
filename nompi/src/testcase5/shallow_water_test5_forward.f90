@@ -1,14 +1,10 @@
 program shallow_water_test5_forward
-  use constants_module, only: dp
-  use cost_module, only: calc_wave_pattern, calc_mass_residual, calc_energy_residual
-  use cost_module_ad, only: calc_mass_residual_fwd_ad, calc_energy_residual_fwd_ad
-  use variables_module
+  use constants_module_ad, only: dp
+  use cost_module_ad, only: calc_wave_pattern, calc_mass_residual, calc_energy_residual, calc_mass_residual_fwd_ad, calc_energy_residual_fwd_ad
   use variables_module_ad
-  use equations_module
   use equations_module_ad
-  use rk4_module
   use rk4_module_ad
-  use io_module
+  use io_module_ad
   implicit none
 
   real(dp) :: t, mass_res, energy_res, wave

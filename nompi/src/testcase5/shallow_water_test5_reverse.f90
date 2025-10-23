@@ -1,14 +1,9 @@
 program shallow_water_test5_reverse
-  use constants_module, only: dp
-  use cost_module, only: calc_mass_residual, calc_energy_residual, calc_wave_pattern
-  use cost_module_ad, only: calc_mass_residual_rev_ad, calc_energy_residual_rev_ad, calc_mass_residual_fwd_rev_ad, calc_energy_residual_fwd_rev_ad
-  use variables_module
+  use constants_module_ad, only: dp
+  use cost_module_ad, only: calc_mass_residual, calc_energy_residual, calc_wave_pattern, calc_mass_residual_rev_ad, calc_energy_residual_rev_ad, calc_mass_residual_fwd_rev_ad, calc_energy_residual_fwd_rev_ad
   use variables_module_ad
-  use equations_module
   use equations_module_ad
-  use rk4_module
   use rk4_module_ad
-  use io_module
   use io_module_ad
   use fautodiff_stack
   implicit none
